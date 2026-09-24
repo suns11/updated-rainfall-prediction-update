@@ -23,6 +23,7 @@ def _init_voice_state():
     for key, value in defaults.items():
 
         if key not in st.session_state:
+
             st.session_state[key] = value
 
 
@@ -56,6 +57,7 @@ def set_voice_enabled(enabled):
 # ============================================================
 
 def clean_voice_text(text):
+
     """
     TTS-এর জন্য English UI words বাদ দিয়ে
     Bangla-readable text তৈরি করে।
@@ -64,6 +66,7 @@ def clean_voice_text(text):
     """
 
     if text is None:
+
         return ""
 
     text = str(text)
@@ -114,7 +117,7 @@ def clean_voice_text(text):
     # --------------------------------------------------------
 
     text = re.sub(
-        r"[_/\\*]+",
+        r"[_/*\\*]+",
         " ",
         text
     )
@@ -191,6 +194,7 @@ def _prepare_voice_text(text):
     text = clean_voice_text(text)
 
     if not text:
+
         return ""
 
     text = _english_digits_to_bangla(
@@ -207,6 +211,70 @@ def _prepare_voice_text(text):
 
 
 # ============================================================
+# FORMAT IRRIGATION TIME
+# ============================================================
+
+def _format_bangla_time(hours):
+
+    """
+    Decimal hours-কে farmer-friendly
+    ঘণ্টা + মিনিটে রূপান্তর করে।
+
+    Examples:
+
+        1.0  -> ১ ঘণ্টা
+        1.5  -> ১ ঘণ্টা ৩০ মিনিট
+        0.5  -> ৩০ মিনিট
+        1.75 -> ১ ঘণ্টা ৪৫ মিনিট
+        2.25 -> ২ ঘণ্টা ১৫ মিনিট
+    """
+
+    try:
+
+        total_minutes = round(
+            float(hours) * 60
+        )
+
+    except (
+        TypeError,
+        ValueError
+    ):
+
+        return ""
+
+    if total_minutes <= 0:
+
+        return ""
+
+    total_hours = total_minutes // 60
+    minutes = total_minutes % 60
+
+    parts = []
+
+    # --------------------------------------------------------
+    # HOURS
+    # --------------------------------------------------------
+
+    if total_hours > 0:
+
+        parts.append(
+            f"{_english_digits_to_bangla(str(total_hours))} ঘণ্টা"
+        )
+
+    # --------------------------------------------------------
+    # MINUTES
+    # --------------------------------------------------------
+
+    if minutes > 0:
+
+        parts.append(
+            f"{_english_digits_to_bangla(str(minutes))} মিনিট"
+        )
+
+    return " ".join(parts)
+
+
+# ============================================================
 # GENERATE MP3
 # ============================================================
 
@@ -217,6 +285,7 @@ def _generate_audio(text):
     )
 
     if not clean_text:
+
         return None
 
     try:
@@ -241,6 +310,7 @@ def _generate_audio(text):
 
         # gTTS / Internet failure হলে
         # Streamlit app crash করবে না।
+
         return None
 
 
@@ -252,6 +322,7 @@ def speak_sequence(
     messages,
     delay=0.0
 ):
+
     """
     একাধিক voice message একসাথে একটি Bangla audio-তে
     convert করে।
@@ -266,9 +337,11 @@ def speak_sequence(
     # --------------------------------------------------------
 
     if not is_voice_enabled():
+
         return
 
     if not messages:
+
         return
 
     # --------------------------------------------------------
@@ -284,11 +357,13 @@ def speak_sequence(
         )
 
         if cleaned:
+
             prepared_messages.append(
                 cleaned
             )
 
     if not prepared_messages:
+
         return
 
     # --------------------------------------------------------
@@ -318,6 +393,7 @@ def speak_sequence(
         ==
         voice_hash
     ):
+
         return
 
     # --------------------------------------------------------
@@ -329,6 +405,7 @@ def speak_sequence(
     )
 
     if audio is None:
+
         return
 
     # --------------------------------------------------------
@@ -377,6 +454,7 @@ def growth_stage_auto_voice(
 ):
 
     if not stage_label:
+
         return
 
     PAUSE_TOKEN = "।"
@@ -392,15 +470,18 @@ def growth_stage_auto_voice(
             "আপনি চাইলে উপরের বৃদ্ধি পর্যায় "
             "থেকে অন্য পর্যায় নির্বাচন করতে পারেন।"
         )
+
     ]
 
     if next_instruction:
 
         messages.extend([
+
             PAUSE_TOKEN,
             PAUSE_TOKEN,
             PAUSE_TOKEN,
             next_instruction
+
         ])
 
     speak_sequence(
@@ -412,41 +493,36 @@ def growth_stage_auto_voice(
 # ============================================================
 # AGRICULTURE RESULT VOICE
 #
-# SIMPLIFIED (farmer-friendly) FLOW — only 3 things, in order:
+# FARMER-FRIENDLY FLOW
 #
-#   1. সেচ লাগবে কিনা + কত পানি লাগবে (liters)
-#   2. কত ঘণ্টা সেচ দিতে হবে (if known)
-#   3. আজ বৃষ্টি না হলে — কত পানি + কত ঘণ্টা (if applicable)
+# 1. সেচ লাগবে কিনা + কত পানি
+# 2. কত ঘণ্টা + কত মিনিট
+# 3. বৃষ্টি না হলে কত পানি + কত ঘণ্টা + কত মিনিট
 #
-# NOTHING ELSE is spoken. No ET0 / Kc / effective rain /
-# available water / net vs gross breakdown — that stays as
-# text-only detail in the "বিস্তারিত" expander on screen.
+# Technical calculation voice-এ বলা হবে না।
 # ============================================================
 
 def agriculture_result_voice(
-
     irrigation_needed,
-
     water_liters=0,
-
     irrigation_time_hours=None,
-
     no_rain_water_liters=None,
-
     no_rain_time_hours=None,
-
 ):
 
     """
-    Agriculture Result Card-এর জন্য farmer-friendly, ছোট voice।
+    Agriculture Result Card-এর জন্য farmer-friendly voice।
 
-    শুধু তিনটি জিনিস বলা হয়:
+    শুধু গুরুত্বপূর্ণ তথ্য বলা হয়:
+
         ১. সেচ লাগবে কিনা + কত পানি
-        ২. কত ঘণ্টা সেচ দিতে হবে
-        ৩. বৃষ্টি না হলে কত পানি + কত ঘণ্টা
 
-    Technical breakdown (ET0, Kc, effective rain, available
-    water, net/gross আলাদা করে) voice-এ বলা হয় না।
+        ২. সেচ দিতে কত ঘণ্টা ও মিনিট লাগবে
+
+        ৩. বৃষ্টি না হলে কত পানি এবং কত সময় লাগবে
+
+    ET0, Kc, effective rain, available water,
+    net/gross breakdown voice-এ বলা হয় না।
     """
 
     messages = []
@@ -458,14 +534,23 @@ def agriculture_result_voice(
     if irrigation_needed:
 
         try:
-            water_liters = float(water_liters)
-        except (TypeError, ValueError):
+
+            water_liters = float(
+                water_liters
+            )
+
+        except (
+            TypeError,
+            ValueError
+        ):
+
             water_liters = 0.0
 
         messages.append(
 
             f"আজ আপনার জমিতে সেচ প্রয়োজন। "
-            f"প্রায় {water_liters:.0f} লিটার পানি সেচ দিতে হবে।"
+            f"প্রায় {water_liters:.0f} লিটার পানি "
+            f"সেচ দিতে হবে।"
 
         )
 
@@ -480,58 +565,72 @@ def agriculture_result_voice(
         )
 
     # ========================================================
-    # 2. IRRIGATION TIME (main scenario)
+    # 2. IRRIGATION TIME
     # ========================================================
 
-    if irrigation_needed and irrigation_time_hours is not None:
+    if (
+        irrigation_needed
+        and
+        irrigation_time_hours is not None
+    ):
 
-        try:
+        time_text = _format_bangla_time(
+            irrigation_time_hours
+        )
 
-            hours = float(irrigation_time_hours)
+        if time_text:
 
-            if hours > 0:
+            messages.append(
 
-                messages.append(
+                f"এতে প্রায় {time_text} "
+                f"সময় লাগবে।"
 
-                    f"এতে প্রায় {hours:.1f} ঘণ্টা সময় লাগবে।"
-
-                )
-
-        except (TypeError, ValueError):
-
-            pass
+            )
 
     # ========================================================
-    # 3. NO RAIN SCENARIO — WATER + TIME TOGETHER
+    # 3. NO RAIN SCENARIO
     # ========================================================
 
     try:
-        no_rain_water_value = float(no_rain_water_liters)
-    except (TypeError, ValueError):
+
+        no_rain_water_value = float(
+            no_rain_water_liters
+        )
+
+    except (
+        TypeError,
+        ValueError
+    ):
+
         no_rain_water_value = 0.0
 
     if no_rain_water_value > 0:
 
         no_rain_line = (
+
             f"আজ যদি বৃষ্টি না হয়, তাহলে প্রায় "
-            f"{no_rain_water_value:.0f} লিটার পানি সেচ দিতে হবে।"
+            f"{no_rain_water_value:.0f} লিটার পানি "
+            f"সেচ দিতে হবে।"
+
         )
 
-        try:
+        no_rain_time_text = _format_bangla_time(
+            no_rain_time_hours
+        )
 
-            no_rain_hours = float(no_rain_time_hours)
+        if no_rain_time_text:
 
-            if no_rain_hours > 0:
+            no_rain_line += (
 
-                no_rain_line += (
-                    f" এতে প্রায় {no_rain_hours:.1f} ঘণ্টা সময় লাগবে।"
-                )
+                f" এতে প্রায় "
+                f"{no_rain_time_text} "
+                f"সময় লাগবে।"
 
-        except (TypeError, ValueError):
+            )
 
-            pass
-
-        messages.append(no_rain_line)
+        messages.append(
+            no_rain_line
+        )
 
     # ========================================================
     # FINAL VOICE
@@ -551,6 +650,7 @@ def agriculture_recommendation_voice(
 ):
 
     if not recommendations:
+
         return
 
     if isinstance(
@@ -583,6 +683,7 @@ def speak(
 ):
 
     if not text:
+
         return
 
     speak_sequence(
@@ -623,18 +724,14 @@ def play_welcome(text):
 # ============================================================
 
 def selection_voice(
-
     text,
-
     value=None,
-
     key=None,
-
     delay=0.12
-
 ):
 
     if not text:
+
         return
 
     speak_sequence(
@@ -648,16 +745,13 @@ def selection_voice(
 # ============================================================
 
 def section_voice(
-
     text,
-
     key=None,
-
     delay=0.10
-
 ):
 
     if not text:
+
         return
 
     speak_sequence(
@@ -700,6 +794,7 @@ def render_voice_player():
     # --------------------------------------------------------
 
     if not is_voice_enabled():
+
         return
 
     # --------------------------------------------------------
@@ -721,6 +816,7 @@ def render_voice_player():
     )
 
     if not audio:
+
         return
 
     # --------------------------------------------------------
@@ -728,6 +824,7 @@ def render_voice_player():
     # --------------------------------------------------------
 
     if version == rendered_version:
+
         return
 
     # --------------------------------------------------------
