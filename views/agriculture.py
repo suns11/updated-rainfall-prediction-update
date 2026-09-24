@@ -480,6 +480,52 @@ def bn_num(
         return "N/A"
 
 
+def format_irrigation_time_bn(hours):
+    """
+    ঘণ্টাকে বাংলায় "X ঘণ্টা Y মিনিট" আকারে দেখায়।
+
+    - ১ ঘণ্টার কম হলে শুধু মিনিট দেখাবে (যেমন: ৪৫ মিনিট)
+    - ১ ঘণ্টা বা তার বেশি হলে ঘণ্টা ও মিনিট দুটোই দেখাবে
+      (যেমন: ২ ঘণ্টা ৩০ মিনিট)
+    - পুরো ঘণ্টা হলে শুধু ঘণ্টা দেখাবে (যেমন: ৩ ঘণ্টা)
+    """
+
+    try:
+
+        total_minutes = int(
+            round(
+                float(hours) * 60
+            )
+        )
+
+    except Exception:
+
+        return "N/A"
+
+    if total_minutes <= 0:
+
+        return "১ মিনিটের কম"
+
+    h = total_minutes // 60
+    m = total_minutes % 60
+
+    parts = []
+
+    if h > 0:
+
+        parts.append(
+            f"{bn_num(h, 0)} ঘণ্টা"
+        )
+
+    if m > 0:
+
+        parts.append(
+            f"{bn_num(m, 0)} মিনিট"
+        )
+
+    return " ".join(parts)
+
+
 BANGLA_MONTHS = {
     1: "জানুয়ারি",
     2: "ফেব্রুয়ারি",
@@ -4419,12 +4465,19 @@ def show_agriculture_result():
             and float(irrigation_time_hours) > 0
         ):
 
-            time_html = f"""
-            <div class="metric-block">
-                <div class="metric-label">আনুমানিক সেচের সময় (Irrigation Time)</div>
-                <div class="metric-value">{bn_num(irrigation_time_hours, 1)}<span class="metric-unit">ঘণ্টা</span></div>
-            </div>
-            """
+            # NOTE:
+            # Built as a single line (no leading/trailing newline or
+            # indentation inside the f-string) and .strip()-ed, so
+            # this never leaves a blank/whitespace-only line inside
+            # the outer HTML block below. A blank line there makes
+            # Streamlit's markdown parser end the HTML block early,
+            # which used to leak a literal "</div>" onto the page.
+            time_html = (
+                f'<div class="metric-block">'
+                f'<div class="metric-label">আনুমানিক সেচের সময় (Irrigation Time)</div>'
+                f'<div class="metric-value">{format_irrigation_time_bn(irrigation_time_hours)}</div>'
+                f'</div>'
+            ).strip()
 
         st.markdown(
             f"""
@@ -4787,7 +4840,7 @@ def show_agriculture_result():
 
                 st.success(
                     f"আনুমানিক সেচের সময়: প্রায় "
-                    f"{bn_num(irrigation_time_hours, 1)} ঘণ্টা"
+                    f"{format_irrigation_time_bn(irrigation_time_hours)}"
                 )
 
             else:
