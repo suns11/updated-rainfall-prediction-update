@@ -1,4 +1,437 @@
-# Agriculture Service Code
+# ============================================================
+# ============================================================
+#          SMART AGRICULTURE & IRRIGATION PAGE — DEVELOPER GUIDE
+# ============================================================
+#
+# PURPOSE OF THIS FILE
+# ------------------------------------------------------------
+# This file controls the Streamlit Smart Agriculture & Irrigation
+# page, including its voice-assistant (Bangla) behavior.
+#
+# MAIN RESPONSIBILITIES
+# ------------------------------------------------------------
+# 1. Play welcome / section / selection / result voice prompts
+# 2. Inject page-level CSS styling
+# 3. Format numbers and dates into Bangla text
+# 4. Provide reusable voice-input helper widgets
+# 5. Auto-run rainfall prediction for the selected station/date
+# 6. Translate station/district/division names into Bangla
+# 7. Collect station + date (Location & Date section)
+# 8. Collect weather / rainfall information (Auto or Manual)
+# 9. Collect land information (area + unit)
+# 10. Collect crop + season information
+# 11. Determine planting date and growth stage
+# 12. Show crop reference information
+# 13. Collect soil information
+# 14. Collect existing water in the field
+# 15. Determine crop water requirement (Automatic or Manual)
+# 16. Collect irrigation system information (method/efficiency)
+# 17. Run the smart irrigation calculation
+# 18. Display the smart irrigation result (headline, summary,
+#     recommendations, full calculation details, chart)
+# 19. Drive the overall page controller (show_agriculture())
+#
+#
+# ============================================================
+#                    MASTER CODE INDEX
+# ============================================================
+#
+# [01] IMPORTS
+#      External libraries and internal project services.
+#
+# [02] WELCOME VOICE TEXT
+#      Constant: AGRICULTURE_WELCOME_TEXT
+#      Bangla welcome message spoken when the page opens.
+#
+# [03] PAGE VOICE STARTUP
+#      Function: start_agriculture_welcome()
+#      Plays the welcome voice sequence exactly once per session.
+#
+# [04] VOICE ON/OFF TOGGLE
+#      Function: agriculture_voice_toggle()
+#      Single page-level toggle that enables/disables all voice.
+#
+# [05] PAGE STYLING
+#      Function: inject_agriculture_styles()
+#      Injects all page-level CSS (radio cards, sidebar theme,
+#      result cards, info cards, headline cards, etc).
+#
+#      IF ONLY VISUAL STYLE NEEDS TO CHANGE:
+#      Start here.
+#
+# [06] BANGLA NUMBER FORMATTING
+#      Function: bn_num()
+#      Converts numbers into Bangla-digit display strings.
+#
+# [07] IRRIGATION TIME FORMATTING
+#      Function: format_irrigation_time_bn()
+#      Converts hours into "X ঘণ্টা Y মিনিট" Bangla text.
+#
+# [08] BANGLA MONTH NAMES
+#      Constant: BANGLA_MONTHS
+#      Month-number -> Bangla month-name mapping.
+#
+# [09] DATE DISPLAY TEXT
+#      Function: date_text()
+#      Formats a date object into Bangla display text.
+#
+# [10] DATE VOICE TEXT
+#      Function: voice_date_text()
+#      Formats a date object into Bangla-digit voice text.
+#
+# [11] VOICE INPUT FIELD HELPER
+#      Function: _voice_input_field()
+#      Wraps voice_input_widget() and fires the confirmation
+#      voice callback whenever a spoken value is applied.
+#
+# [12] SECTION TITLE RENDERER
+#      Function: section_title()
+#      Renders the Bangla/English section heading styling.
+#
+# [13] SECTION-ENTRY VOICE
+#      Function: agriculture_section_voice()
+#      Speaks a section's intro voice exactly once per session.
+#
+# [14] SELECTION-CHANGE VOICE
+#      Function: selection_voice()
+#      Speaks a confirmation only when a tracked value changes.
+#
+# [15] VOICE CONFIRMATION TEXT BUILDER
+#      Function: _voice_value_text()
+#      Builds the Bangla confirmation sentence for one widget's
+#      current value (numbers, dates, station, dropdowns, etc).
+#
+#      IF A NEW VOICE-DRIVEN INPUT IS ADDED:
+#      Update this function's key checks.
+#
+# [16] NEXT-INSTRUCTION VOICE MAP
+#      Constant: VOICE_NEXT_INSTRUCTION
+#      Maps each input's session-state key to the Bangla
+#      instruction spoken for the next step.
+#
+# [17] INPUT VOICE CALLBACK
+#      Function: input_voice_callback()
+#      on_change callback: speaks "confirmation -> next
+#      instruction", including the irrigation-method-specific
+#      branching (Drip / Sprinkler / Shallow-Deep).
+#
+# [18] AUTOMATIC RAINFALL PREDICTION (FOR AGRICULTURE)
+#      Function: auto_predict_agriculture_rainfall()
+#      Runs the same CatBoost rainfall pipeline used on the
+#      Rainfall Prediction page, automatically, for the
+#      selected station/date, and stores the result in
+#      st.session_state.rain_prediction.
+#
+#      IF THE RAINFALL PIPELINE ITSELF NEEDS TO CHANGE:
+#      That logic lives in views/prediction.py, not here.
+#      This function only calls it and prepares the UI values.
+#
+# [19] BANGLA LOCATION NAME TABLES
+#      Constants: BN_DIVISIONS, BN_DISTRICTS, BN_STATIONS
+#      English -> Bangla name lookup tables.
+#
+# [20] BANGLA NAME LOOKUP
+#      Function: _bn_lookup()
+#      Case-insensitive lookup into a name table with English
+#      fallback if no Bangla translation exists.
+#
+# [21] BANGLA LOCATION LABEL BUILDER
+#      Function: build_bn_location_label()
+#      Builds "Station, District (Division)" in Bangla.
+#
+# [22] LOCATION & DATE SECTION
+#      Function: agriculture_location_date_section()
+#      Station + prediction-date selectors; triggers automatic
+#      rainfall prediction once both are chosen.
+#
+# [23] WEATHER & RAINFALL INFORMATION SECTION
+#      Function: weather_information_section()
+#      Auto (predicted) vs Manual rainfall/ET0 entry.
+#
+# [24] LAND INFORMATION SECTION
+#      Function: land_information_section()
+#      Land area + area unit input.
+#
+# [25] CROP INFORMATION SECTION
+#      Function: crop_information_section()
+#      Crop + season selection (season auto-selected for
+#      non-rice crops).
+#
+# [26] PLANTING & GROWTH STAGE SECTION
+#      Function: planting_growth_section()
+#      Calculation date + planting date; automatic growth-stage
+#      determination with manual override / fallback.
+#
+# [27] CROP REFERENCE INFORMATION CARD
+#      Function: crop_reference_section()
+#      Displays cultivar / duration / seasonal CWR / IWR
+#      reference info for the selected crop+season.
+#
+# [28] SOIL INFORMATION SECTION
+#      Function: soil_information_section()
+#      Soil type selector (informational; no irrigation
+#      multiplier applied from it).
+#
+# [29] EXISTING WATER SECTION
+#      Function: existing_water_section()
+#      Converts a measured field water depth into an estimated
+#      water volume (liters / m³).
+#
+# [30] CROP WATER REQUIREMENT SECTION
+#      Function: crop_water_requirement_section()
+#      Automatic (ET0 x Kc) vs Manual daily crop water need.
+#
+# [31] IRRIGATION SYSTEM SECTION
+#      Function: irrigation_system_section()
+#      Irrigation method selection (Drip / Sprinkler /
+#      Fixed-flow), method-specific inputs, and efficiency
+#      slider. Reads all method configuration from
+#      services/agriculture.py — no method names are
+#      hardcoded here.
+#
+# [32] MAIN INPUT PANEL / CALCULATION TRIGGER
+#      Function: _agriculture_input_panel()
+#      Orchestrates sections 23–31 in order, validates required
+#      inputs, and on "Calculate" runs calculate_irrigation() +
+#      calculate_irrigation_time() and stores the full result.
+#
+#      IF THE IRRIGATION CALCULATION FORMULA NEEDS TO CHANGE:
+#      That logic lives in services/agriculture.py
+#      (calculate_irrigation / calculate_irrigation_time), not
+#      here. This function only calls it and stores the output.
+#
+# [33] RESULT DISPLAY
+#      Function: show_agriculture_result()
+#      Renders the headline card, short summary card, smart
+#      recommendations, and the full "calculation details"
+#      expander (crop water calc, water balance, how much
+#      water, irrigation method & time, no-rain scenario,
+#      existing water, calculation log, bar chart).
+#
+# [34] MAIN PAGE CONTROLLER
+#      Function: show_agriculture()
+#      Top-level Streamlit page controller for the Agriculture
+#      page. Calls styling, voice, location/date, input panel,
+#      result display, and voice-queue processing in order.
+#
+#
+# ============================================================
+#              IMPORTANT CHANGE-LOCATION GUIDE
+# ============================================================
+#
+# Change welcome voice text
+# -> [02] WELCOME VOICE TEXT
+#
+# Change when welcome voice plays
+# -> [03] PAGE VOICE STARTUP
+#
+# Change voice on/off behavior
+# -> [04] VOICE TOGGLE
+#
+# Change page CSS / card styles
+# -> [05] PAGE STYLING
+#
+# Change Bangla number formatting
+# -> [06] BANGLA NUMBER
+#
+# Change irrigation time text format
+# -> [07] IRRIGATION TIME FORMAT
+#
+# Change Bangla month names
+# -> [08] BANGLA MONTHS
+#
+# Change date display / voice text
+# -> [09] DATE DISPLAY
+# -> [10] DATE VOICE
+#
+# Change what is spoken when a value is confirmed
+# -> [15] VOICE CONFIRMATION TEXT
+#
+# Change what is spoken next after an input
+# -> [16] NEXT-INSTRUCTION MAP
+# -> [17] INPUT VOICE CALLBACK
+#
+# Change automatic rainfall prediction for Agriculture
+# -> [18] AUTOMATIC RAINFALL PREDICTION
+#
+# Change Bangla location name translations
+# -> [19] BANGLA LOCATION TABLES
+# -> [20] BANGLA LOOKUP
+# -> [21] BANGLA LOCATION LABEL
+#
+# Change Station/Date selection UI
+# -> [22] LOCATION & DATE SECTION
+#
+# Change rainfall/ET0 Auto vs Manual behavior
+# -> [23] WEATHER & RAINFALL SECTION
+#
+# Change land area / unit inputs
+# -> [24] LAND INFORMATION SECTION
+#
+# Change crop / season selection
+# -> [25] CROP INFORMATION SECTION
+#
+# Change growth-stage determination UI
+# -> [26] PLANTING & GROWTH STAGE SECTION
+#
+# Change crop reference info card
+# -> [27] CROP REFERENCE CARD
+#
+# Change soil type selection
+# -> [28] SOIL INFORMATION SECTION
+#
+# Change existing-water estimation
+# -> [29] EXISTING WATER SECTION
+#
+# Change crop water requirement (ET0 x Kc / Manual)
+# -> [30] CROP WATER REQUIREMENT SECTION
+#
+# Change irrigation method inputs / efficiency
+# -> [31] IRRIGATION SYSTEM SECTION
+#
+# Change validation rules / calculation trigger
+# -> [32] MAIN INPUT PANEL
+#
+# Change result cards / recommendations / details expander
+# -> [33] RESULT DISPLAY
+#
+# Change overall page order
+# -> [34] MAIN PAGE CONTROLLER
+#
+#
+# ============================================================
+#                  IMPORTANT DEPENDENCIES
+# ============================================================
+#
+# This file depends on:
+#
+# services.data_loader
+#     -> get_station_table()
+#
+# services.weather_api
+#     -> build_on_demand_history()
+#
+# views.prediction
+#     -> load_weather_values()
+#     -> create_prediction_features()
+#     -> condition()
+#     -> estimate_rain_probability()
+#
+# services.voice
+#     -> play_welcome()
+#     -> selection_voice()   (imported as voice_selection)
+#     -> section_voice()
+#     -> speak_sequence()
+#     -> clean_voice_text()
+#     -> agriculture_result_voice()
+#     -> agriculture_recommendation_voice()
+#     -> growth_stage_auto_voice()
+#     -> render_voice_player()
+#     -> process_voice_queue()
+#     -> reset_voice_hash()
+#     -> is_voice_enabled()
+#     -> set_voice_enabled()
+#
+# services.voice_input
+#     -> prepare_voice_input()
+#     -> voice_input_widget()
+#
+# services.agriculture
+#     -> SOIL_TYPES
+#     -> WATER_DEPTH_OPTIONS
+#     -> STAGE_LABELS
+#     -> STAGE_FROM_LABEL
+#     -> get_crop_options()
+#     -> get_season_options()
+#     -> get_crop_reference()
+#     -> determine_growth_stage()
+#     -> get_kc()
+#     -> convert_area_to_m2()
+#     -> convert_water_depth_to_mm()
+#     -> calculate_existing_water_volume()
+#     -> calculate_irrigation()
+#     -> get_irrigation_method_options()
+#     -> get_irrigation_method_config()
+#     -> calculate_irrigation_time()
+#
+# External inputs passed into show_agriculture():
+#     -> df
+#     -> model
+#     -> feature_columns
+#     -> train_medians
+#     -> history_days
+#
+# IMPORTANT:
+# Do not rename these dependencies without checking the files
+# where they are created and used.
+#
+#
+# ============================================================
+#                  AGRICULTURE PAGE FLOW
+# ============================================================
+#
+# Page opens
+#        ↓
+# Welcome voice + styles injected
+#        ↓
+# User selects Station + Date
+#        ↓
+# Automatic rainfall prediction runs (CatBoost)
+#        ↓
+# Weather & Rainfall section (Auto prediction / Manual entry)
+#        ↓
+# Land Information (area + unit)
+#        ↓
+# Crop + Season selection
+#        ↓
+# Planting date + automatic Growth Stage
+#        ↓
+# Crop Reference card
+#        ↓
+# Soil type
+#        ↓
+# Existing water in field
+#        ↓
+# Crop Water Requirement (Automatic ET0×Kc / Manual)
+#        ↓
+# Irrigation System (method + efficiency)
+#        ↓
+# User clicks "Calculate Smart Irrigation"
+#        ↓
+# calculate_irrigation() + calculate_irrigation_time()
+#        ↓
+# Result stored in session state + result voice spoken
+#        ↓
+# Result Display:
+#   Headline card -> Summary card -> Smart Recommendations
+#   -> Full Calculation Details expander (+ bar chart)
+#        ↓
+# Voice queue processed + voice player rendered
+#
+#
+# ============================================================
+# IMPORTANT:
+# The comments below document the original code.
+# Application logic has intentionally been kept unchanged.
+# ============================================================
+
+
+# ============================================================
+# [01] IMPORTS
+# ------------------------------------------------------------
+# PURPOSE:
+# Import all libraries and project services required by this
+# Agriculture page (rainfall reuse, voice services, voice
+# input, and the core agriculture calculation service).
+#
+# CHANGE HERE WHEN:
+# - adding a new Python library
+# - adding a new internal service
+#
+# IMPORTANT:
+# Do not remove an import unless you verify that it is no longer
+# used anywhere in this file.
+# ============================================================
 
 import streamlit as st
 import pandas as pd
@@ -59,6 +492,20 @@ from services.agriculture import (
 )
 
 
+# ============================================================
+# [02] WELCOME VOICE TEXT
+# ------------------------------------------------------------
+# CONSTANT:
+#     AGRICULTURE_WELCOME_TEXT
+#
+# PURPOSE:
+# Bangla welcome message spoken once when the Agriculture page
+# is opened, before asking the user to select station/date.
+#
+# CHANGE HERE IF:
+# - the welcome wording needs to change.
+# ============================================================
+
 AGRICULTURE_WELCOME_TEXT = (
     "আসসালামু আলাইকুম। "
     "স্মার্ট কৃষি পরামর্শ সিস্টেমে স্বাগতম। "
@@ -66,6 +513,25 @@ AGRICULTURE_WELCOME_TEXT = (
     "প্রয়োজনীয় সেচ ও কৃষি পরামর্শ পান।"
 )
 
+
+# ============================================================
+# [03] PAGE VOICE STARTUP
+# ------------------------------------------------------------
+# FUNCTION:
+#     start_agriculture_welcome()
+#
+# PURPOSE:
+# Plays the welcome voice sequence exactly once per session:
+#   1. Welcome text
+#   2. "স্থান ও তারিখ নির্বাচন করুন"
+#
+# IMPORTANT:
+# Other inputs' voice must NOT play automatically on page load;
+# only this welcome sequence does.
+#
+# CHANGE HERE IF:
+# - the welcome trigger/guard logic needs to change.
+# ============================================================
 
 def start_agriculture_welcome():
     """
@@ -95,6 +561,20 @@ def start_agriculture_welcome():
     )
 
 
+# ============================================================
+# [04] VOICE ON/OFF TOGGLE
+# ------------------------------------------------------------
+# FUNCTION:
+#     agriculture_voice_toggle()
+#
+# PURPOSE:
+# Renders the single page-level ON/OFF toggle that controls
+# whether ANY voice on this page is generated or played.
+#
+# CHANGE HERE IF:
+# - toggle placement/label needs to change.
+# ============================================================
+
 def agriculture_voice_toggle():
     """
     Page-এর একদম উপরে একটি single ON/OFF বাটন।
@@ -120,6 +600,25 @@ def agriculture_voice_toggle():
 
     set_voice_enabled(voice_on)
 
+
+# ============================================================
+# [05] PAGE STYLING
+# ------------------------------------------------------------
+# FUNCTION:
+#     inject_agriculture_styles()
+#
+# PURPOSE:
+# Injects all page-level CSS: radio-option cards, sidebar
+# theme, section titles, result/agri/headline/summary/info
+# cards.
+#
+# CHANGE HERE IF:
+# - colors, spacing, card shapes, or any visual style needs to
+#   change.
+#
+# IMPORTANT:
+# Purely visual. Does not affect calculation logic.
+# ============================================================
 
 def inject_agriculture_styles():
 
@@ -448,6 +947,21 @@ def inject_agriculture_styles():
     )
 
 
+# ============================================================
+# [06] BANGLA NUMBER FORMATTING
+# ------------------------------------------------------------
+# FUNCTION:
+#     bn_num()
+#
+# PURPOSE:
+# Converts a numeric value into a Bangla-digit display string,
+# with safe fallback to "N/A" on invalid input.
+#
+# CHANGE HERE IF:
+# - number formatting (decimals, comma grouping) needs to
+#   change.
+# ============================================================
+
 def bn_num(
     value,
     decimals=2,
@@ -479,6 +993,19 @@ def bn_num(
 
         return "N/A"
 
+
+# ============================================================
+# [07] IRRIGATION TIME FORMATTING
+# ------------------------------------------------------------
+# FUNCTION:
+#     format_irrigation_time_bn()
+#
+# PURPOSE:
+# Converts decimal hours into "X ঘণ্টা Y মিনিট" Bangla text.
+#
+# CHANGE HERE IF:
+# - irrigation-time wording/rounding needs to change.
+# ============================================================
 
 def format_irrigation_time_bn(hours):
     """
@@ -526,6 +1053,20 @@ def format_irrigation_time_bn(hours):
     return " ".join(parts)
 
 
+# ============================================================
+# [08] BANGLA MONTH NAMES
+# ------------------------------------------------------------
+# CONSTANT:
+#     BANGLA_MONTHS
+#
+# PURPOSE:
+# Maps a calendar month number (1–12) to its Bangla name, used
+# by date_text() and voice_date_text().
+#
+# CHANGE HERE IF:
+# - month-name spelling needs to change.
+# ============================================================
+
 BANGLA_MONTHS = {
     1: "জানুয়ারি",
     2: "ফেব্রুয়ারি",
@@ -542,6 +1083,21 @@ BANGLA_MONTHS = {
 }
 
 
+# ============================================================
+# [09] DATE DISPLAY TEXT
+# ------------------------------------------------------------
+# FUNCTION:
+#     date_text()
+#
+# PURPOSE:
+# Formats a date object into "D Month YYYY" Bangla-labeled
+# display text (digits remain ASCII here; see voice_date_text()
+# for the Bangla-digit voice version).
+#
+# CHANGE HERE IF:
+# - the display date format needs to change.
+# ============================================================
+
 def date_text(value):
 
     if value is None:
@@ -555,6 +1111,20 @@ def date_text(value):
 
         return str(value)
 
+
+# ============================================================
+# [10] DATE VOICE TEXT
+# ------------------------------------------------------------
+# FUNCTION:
+#     voice_date_text()
+#
+# PURPOSE:
+# Formats a date object into fully Bangla-digit voice text
+# ("১৫ সেপ্টেম্বর ২০২৬") for use in spoken confirmations.
+#
+# CHANGE HERE IF:
+# - the spoken date format needs to change.
+# ============================================================
 
 def voice_date_text(value):
 
@@ -573,6 +1143,23 @@ def voice_date_text(value):
 
         return str(value)
 
+
+# ============================================================
+# [11] VOICE INPUT FIELD HELPER
+# ------------------------------------------------------------
+# FUNCTION:
+#     _voice_input_field()
+#
+# PURPOSE:
+# Thin wrapper around voice_input_widget(): renders the mic
+# widget for a given key/prompt/type, and — if a spoken value
+# was applied to that key — fires input_voice_callback() so the
+# usual "confirmation -> next instruction" voice sequence plays
+# exactly as it would for a manual change.
+#
+# CHANGE HERE IF:
+# - the voice-applied-value callback wiring needs to change.
+# ============================================================
 
 def _voice_input_field(
     key,
@@ -603,6 +1190,20 @@ def _voice_input_field(
     return applied
 
 
+# ============================================================
+# [12] SECTION TITLE RENDERER
+# ------------------------------------------------------------
+# FUNCTION:
+#     section_title()
+#
+# PURPOSE:
+# Renders the standard "Bangla (English)" section heading used
+# at the top of every page section.
+#
+# CHANGE HERE IF:
+# - the heading markup/style needs to change.
+# ============================================================
+
 def section_title(
     bangla,
     english
@@ -618,6 +1219,20 @@ def section_title(
         unsafe_allow_html=True
     )
 
+
+# ============================================================
+# [13] SECTION-ENTRY VOICE
+# ------------------------------------------------------------
+# FUNCTION:
+#     agriculture_section_voice()
+#
+# PURPOSE:
+# Speaks a given section's intro text exactly once per session,
+# guarded by a per-key session-state flag.
+#
+# CHANGE HERE IF:
+# - the "speak once" guard behavior needs to change.
+# ============================================================
 
 def agriculture_section_voice(
     key,
@@ -645,6 +1260,21 @@ def agriculture_section_voice(
         delay=0.10
     )
 
+
+# ============================================================
+# [14] SELECTION-CHANGE VOICE
+# ------------------------------------------------------------
+# FUNCTION:
+#     selection_voice()
+#
+# PURPOSE:
+# Speaks a confirmation only when a tracked value actually
+# changes from its previously stored value (first-time set is
+# silent).
+#
+# CHANGE HERE IF:
+# - the change-detection / first-set behavior needs to change.
+# ============================================================
 
 def selection_voice(
     key,
@@ -682,6 +1312,24 @@ def selection_voice(
         delay=0.12
     )
 
+
+# ============================================================
+# [15] VOICE CONFIRMATION TEXT BUILDER
+# ------------------------------------------------------------
+# FUNCTION:
+#     _voice_value_text()
+#
+# PURPOSE:
+# Builds the Bangla confirmation sentence spoken after a given
+# widget's value changes (numbers, dates, station, and all
+# dropdown/radio selections).
+#
+# IF A NEW VOICE-DRIVEN INPUT IS ADDED:
+# Add its key and wording here so it gets a spoken confirmation.
+#
+# CHANGE HERE IF:
+# - confirmation wording for any specific input needs to change.
+# ============================================================
 
 def _voice_value_text(key, value):
     """Return a short Bangla confirmation for one widget value."""
@@ -930,6 +1578,26 @@ def _voice_value_text(key, value):
     )
 
 
+# ============================================================
+# [16] NEXT-INSTRUCTION VOICE MAP
+# ------------------------------------------------------------
+# CONSTANT:
+#     VOICE_NEXT_INSTRUCTION
+#
+# PURPOSE:
+# Maps each input's session-state key to the Bangla instruction
+# spoken immediately after that input's confirmation, guiding
+# the user to the next step of the form.
+#
+# IMPORTANT:
+# The irrigation-method-specific branching (Drip / Sprinkler /
+# Shallow-Deep) is NOT here — it is computed dynamically in
+# input_voice_callback() below.
+#
+# CHANGE HERE IF:
+# - the step-by-step voice guidance order/wording changes.
+# ============================================================
+
 VOICE_NEXT_INSTRUCTION = {
 
     "agriculture_weather_source": "",
@@ -1007,6 +1675,28 @@ VOICE_NEXT_INSTRUCTION = {
         "",
 }
 
+
+# ============================================================
+# [17] INPUT VOICE CALLBACK
+# ------------------------------------------------------------
+# FUNCTION:
+#     input_voice_callback()
+#
+# PURPOSE:
+# Streamlit on_change callback used by (almost) every input on
+# this page. Speaks:
+#     confirmation -> next relevant instruction
+#
+# Irrigation method has its own special branching:
+#     Shallow / Deep -> Calculate
+#     Drip           -> Dripper Count -> Calculate
+#     Sprinkler      -> Sprinkler Count -> Flow per Sprinkler
+#                        -> Calculate
+#
+# CHANGE HERE IF:
+# - the "skip if unchanged" guard needs to change
+# - the irrigation-method branching needs to change.
+# ============================================================
 
 def input_voice_callback(
     key,
@@ -1131,6 +1821,36 @@ def input_voice_callback(
             delay=0.05
         )
 
+
+# ============================================================
+# [18] AUTOMATIC RAINFALL PREDICTION (FOR AGRICULTURE)
+# ------------------------------------------------------------
+# FUNCTION:
+#     auto_predict_agriculture_rainfall()
+#
+# PURPOSE:
+# Runs the same CatBoost rainfall pipeline used on the
+# standalone Rainfall Prediction page, automatically and
+# silently, for the currently selected station/date, and
+# stores the result in st.session_state.rain_prediction so the
+# Weather & Rainfall section (see [23]) can display it.
+#
+# RETURN:
+#   The resolved station row (or None if station/date/meta is
+#   missing).
+#
+# IMPORTANT:
+# This function does NOT change the underlying prediction
+# pipeline (load_weather_values / create_prediction_features /
+# condition / estimate_rain_probability all come from
+# views.prediction). It only calls that pipeline, caches by
+# station+date key, and adapts weather-value fallbacks for the
+# Agriculture flow (base = station CSV median per field).
+#
+# CHANGE HERE IF:
+# - the Agriculture-side caching key changes
+# - the Agriculture-side weather-fallback/note text changes.
+# ============================================================
 
 def auto_predict_agriculture_rainfall(
     df,
@@ -1506,6 +2226,21 @@ def auto_predict_agriculture_rainfall(
         return station
 
 
+# ============================================================
+# [19] BANGLA LOCATION NAME TABLES
+# ------------------------------------------------------------
+# CONSTANTS:
+#     BN_DIVISIONS, BN_DISTRICTS, BN_STATIONS
+#
+# PURPOSE:
+# English -> Bangla lookup tables for division, district, and
+# station names, used to build Bangla location labels/voice.
+#
+# CHANGE HERE IF:
+# - a station/district/division name or its Bangla spelling
+#   needs to be added or corrected.
+# ============================================================
+
 BN_DIVISIONS = {
     "Dhaka": "ঢাকা",
     "Chattogram": "চট্টগ্রাম",
@@ -1646,6 +2381,21 @@ BN_STATIONS = {
 }
 
 
+# ============================================================
+# [20] BANGLA NAME LOOKUP
+# ------------------------------------------------------------
+# FUNCTION:
+#     _bn_lookup()
+#
+# PURPOSE:
+# Case-insensitive lookup of an English name inside one of the
+# BN_* tables above; returns the original (English) name if no
+# Bangla translation is found.
+#
+# CHANGE HERE IF:
+# - the lookup/fallback strategy needs to change.
+# ============================================================
+
 def _bn_lookup(name, table):
 
     if name is None:
@@ -1668,6 +2418,20 @@ def _bn_lookup(name, table):
 
     return key
 
+
+# ============================================================
+# [21] BANGLA LOCATION LABEL BUILDER
+# ------------------------------------------------------------
+# FUNCTION:
+#     build_bn_location_label()
+#
+# PURPOSE:
+# Builds the Bangla "Station, District (Division)" label used
+# alongside the English label in the station dropdown.
+#
+# CHANGE HERE IF:
+# - the label format/order needs to change.
+# ============================================================
 
 def build_bn_location_label(
     station,
@@ -1696,6 +2460,25 @@ def build_bn_location_label(
         f"({division_bn})"
     )
 
+
+# ============================================================
+# [22] LOCATION & DATE SECTION
+# ------------------------------------------------------------
+# FUNCTION:
+#     agriculture_location_date_section()
+#
+# PURPOSE:
+# Renders the Station + Prediction Date selectors (with voice
+# input support) and, once both are chosen, triggers the
+# automatic rainfall prediction (see [18]).
+#
+# RETURN:
+#   (selected_label, target_date)
+#
+# CHANGE HERE IF:
+# - station/date selection UI needs to change
+# - what happens once both are selected needs to change.
+# ============================================================
 
 def agriculture_location_date_section(
     df,
@@ -1872,6 +2655,26 @@ def agriculture_location_date_section(
         target_date
     )
 
+
+# ============================================================
+# [23] WEATHER & RAINFALL INFORMATION SECTION
+# ------------------------------------------------------------
+# FUNCTION:
+#     weather_information_section()
+#
+# PURPOSE:
+# Lets the user either use the AUTO (predicted) rainfall/ET0
+# from [18], or switch to MANUAL entry. Also speaks the
+# predicted-rainfall voice summary once per distinct
+# (rain, et0) result.
+#
+# RETURN:
+#   (weather_source, predicted_rain, et0_value)
+#
+# CHANGE HERE IF:
+# - Auto/Manual UI or fallback behavior needs to change
+# - the predicted-rainfall voice summary needs to change.
+# ============================================================
 
 def weather_information_section():
 
@@ -2138,6 +2941,23 @@ def weather_information_section():
     )
 
 
+# ============================================================
+# [24] LAND INFORMATION SECTION
+# ------------------------------------------------------------
+# FUNCTION:
+#     land_information_section()
+#
+# PURPOSE:
+# Collects land area and its unit (Decimal / Acre / Hectare /
+# Square Meter).
+#
+# RETURN:
+#   (land_area, area_unit)
+#
+# CHANGE HERE IF:
+# - available area units need to change.
+# ============================================================
+
 def land_information_section():
 
     section_title(
@@ -2228,6 +3048,26 @@ def land_information_section():
         area_unit
     )
 
+
+# ============================================================
+# [25] CROP INFORMATION SECTION
+# ------------------------------------------------------------
+# FUNCTION:
+#     crop_information_section()
+#
+# PURPOSE:
+# Collects Crop selection, and Season selection — season is a
+# manual selectbox for rice crops (ধান) and is auto-selected
+# (single option) for all other crops.
+#
+# RETURN:
+#   (crop_label, crop_name, season_label, season_name,
+#    crop_error)
+#
+# CHANGE HERE IF:
+# - crop/season selection UI or the rice-vs-other-crop branching
+#   needs to change.
+# ============================================================
 
 def crop_information_section():
 
@@ -2472,6 +3312,35 @@ def crop_information_section():
         False
     )
 
+
+# ============================================================
+# [26] PLANTING & GROWTH STAGE SECTION
+# ------------------------------------------------------------
+# FUNCTION:
+#     planting_growth_section()
+#
+# PURPOSE:
+# Collects Calculation Date + Planting/Sowing Date, then calls
+# determine_growth_stage() to automatically compute the crop's
+# current growth stage, with:
+#   - a manual override selectbox when a stage is available
+#   - a specific "Out of Season" error/reference-period view
+#   - a manual fallback selectbox when calendar data is missing
+#
+# RETURN:
+#   (calculation_date, actual_planting_date,
+#    use_actual_planting, stage_info, crop_stage,
+#    calculation_allowed)
+#
+# CHANGE HERE IF:
+# - date inputs, automatic-stage display, or the
+#   override/fallback/out-of-season branching needs to change.
+#
+# IMPORTANT:
+# The growth-stage CALCULATION itself lives in
+# services.agriculture.determine_growth_stage(); this function
+# only renders the UI around it.
+# ============================================================
 
 def planting_growth_section(
     crop_name,
@@ -2882,6 +3751,24 @@ def planting_growth_section(
     )
 
 
+# ============================================================
+# [27] CROP REFERENCE INFORMATION CARD
+# ------------------------------------------------------------
+# FUNCTION:
+#     crop_reference_section()
+#
+# PURPOSE:
+# Displays cultivar / reference duration / seasonal CWR / IWR
+# reference figures for the selected crop + season.
+#
+# IMPORTANT:
+# These figures are seasonal reference values only — NOT the
+# daily irrigation requirement used in the calculation.
+#
+# CHANGE HERE IF:
+# - the reference-card fields/wording need to change.
+# ============================================================
+
 def crop_reference_section(
     crop_label,
     season_label,
@@ -2965,6 +3852,25 @@ def crop_reference_section(
     )
 
 
+# ============================================================
+# [28] SOIL INFORMATION SECTION
+# ------------------------------------------------------------
+# FUNCTION:
+#     soil_information_section()
+#
+# PURPOSE:
+# Soil type selector. Informational + used for recommendation
+# text (see [33]) — NOT used as a multiplier in the irrigation
+# calculation itself.
+#
+# RETURN:
+#   soil_type
+#
+# CHANGE HERE IF:
+# - available soil types need to change (see SOIL_TYPES in
+#   services.agriculture).
+# ============================================================
+
 def soil_information_section():
 
     section_title(
@@ -3010,6 +3916,32 @@ def soil_information_section():
 
     return soil_type
 
+
+# ============================================================
+# [29] EXISTING WATER SECTION
+# ------------------------------------------------------------
+# FUNCTION:
+#     existing_water_section()
+#
+# PURPOSE:
+# Lets the user pick a preset finger-depth water measurement
+# (or a custom depth in cm), converts it to mm, and shows the
+# estimated total water already present in the field
+# (liters / m³) using the previewed land area.
+#
+# RETURN:
+#   (water_measurement, existing_water_mm,
+#    existing_water_volume)
+#
+# CHANGE HERE IF:
+# - preset depth options or the estimation display need to
+#   change.
+#
+# IMPORTANT:
+# The mm -> volume conversion itself lives in
+# convert_water_depth_to_mm() / calculate_existing_water_volume()
+# in services.agriculture; this function only renders the UI.
+# ============================================================
 
 def existing_water_section(
     land_area,
@@ -3149,6 +4081,30 @@ def existing_water_section(
         existing_water_volume
     )
 
+
+# ============================================================
+# [30] CROP WATER REQUIREMENT SECTION
+# ------------------------------------------------------------
+# FUNCTION:
+#     crop_water_requirement_section()
+#
+# PURPOSE:
+# Shows the Automatic daily crop water requirement
+# (ET0 x Kc, using get_kc() for the current growth stage) and
+# lets the user choose between Automatic and Manual Override
+# for the value actually used in the calculation.
+#
+# RETURN:
+#   (kc_preview, automatic_etc_preview,
+#    water_requirement_method, manual_crop_water_need_mm)
+#
+# CHANGE HERE IF:
+# - the Automatic vs Manual Override UI/wording needs to change.
+#
+# IMPORTANT:
+# get_kc() (Kc lookup) lives in services.agriculture; this
+# function only previews ET0 x Kc for display.
+# ============================================================
 
 def crop_water_requirement_section(
     crop_name,
@@ -3336,7 +4292,35 @@ def crop_water_requirement_section(
 
 
 # ======================================================================
-# UPDATED IRRIGATION SYSTEM SECTION
+# [31] IRRIGATION SYSTEM SECTION
+# ----------------------------------------------------------------------
+# FUNCTION:
+#     irrigation_system_section()
+#
+# PURPOSE:
+# Irrigation method selector (Drip / Sprinkler / Fixed-flow —
+# names/config read entirely from services.agriculture, none
+# hardcoded here), plus method-specific inputs:
+#   PER_DRIPPER    -> dripper count
+#   PER_SPRINKLER  -> sprinkler count + flow per sprinkler
+#   FIXED_FLOW     -> no extra input (representative flow from
+#                      config)
+# and the Irrigation Efficiency % slider (default seeded from
+# the method's own configured default_efficiency, and reset
+# whenever the method changes).
+#
+# RETURN:
+#   (irrigation_method, irrigation_efficiency, dripper_count,
+#    sprinkler_count, sprinkler_flow_lph)
+#
+# CHANGE HERE IF:
+# - method-specific input fields/labels need to change.
+#
+# IMPORTANT:
+# Irrigation method NAMES and CONFIGURATION are the single
+# source of truth in services.agriculture
+# (get_irrigation_method_options / get_irrigation_method_config).
+# Do not hardcode method names in this section.
 # ======================================================================
 
 def irrigation_system_section():
@@ -3652,6 +4636,34 @@ def irrigation_system_section():
         sprinkler_flow_lph
     )
 
+
+# ============================================================
+# [32] MAIN INPUT PANEL / CALCULATION TRIGGER
+# ------------------------------------------------------------
+# FUNCTION:
+#     _agriculture_input_panel()
+#
+# PURPOSE:
+# Orchestrates sections [23]–[31] in order, validates all
+# required inputs (including method-specific dripper/sprinkler
+# requirements), enables/disables the "Calculate" button
+# accordingly, and — on click — runs calculate_irrigation() +
+# calculate_irrigation_time(), computes the "no rain today"
+# scenario, and stores everything in
+# st.session_state.agri_result. Also speaks the simplified
+# result voice.
+#
+# CHANGE HERE IF:
+# - required-input validation rules need to change
+# - what gets stored in agri_result needs to change
+# - the no-rain-scenario math needs to change.
+#
+# IMPORTANT:
+# calculate_irrigation() and calculate_irrigation_time() are
+# NOT modified here — this function only calls them and stores
+# their output. They remain the single source of truth for the
+# actual irrigation formulas.
+# ============================================================
 
 def _agriculture_input_panel():
 
@@ -4353,6 +5365,49 @@ def _agriculture_input_panel():
                 f"(Irrigation calculation failed): {exc}"
             )
 
+
+# ============================================================
+# [33] RESULT DISPLAY
+# ------------------------------------------------------------
+# FUNCTION:
+#     show_agriculture_result()
+#
+# PURPOSE:
+# Renders the full smart-irrigation result, laid out as:
+#
+#   1. Headline card
+#        - Irrigation needed: water needed + gross mm +
+#          irrigation time
+#        - No irrigation needed: available water vs crop need
+#
+#   2. Short summary card (2–3 lines: water balance, net/gross
+#      irrigation or "not needed", no-rain scenario)
+#
+#   3. Smart Recommendation section (button-triggered voice +
+#      bullet list, built from status / no-rain / rain-forecast
+#      / soil-type / irrigation-method rules)
+#
+#   4. "Show Full Calculation Details" expander:
+#        - Crop water calculation (ET0, Kc, ETc)
+#        - Water balance (effective rain, available water, net,
+#          gross)
+#        - How much water (liters, m³, area)
+#        - Irrigation method & time
+#        - If-no-rain-today scenario
+#        - Existing water information
+#        - Calculation log (crop/season/dates/stage/etc)
+#        - Bar chart (Plotly) of the water-balance categories
+#
+# CHANGE HERE IF:
+# - result cards, metric labels, recommendation rules, or the
+#   details expander/chart need to change.
+#
+# IMPORTANT:
+# This function only DISPLAYS st.session_state.agri_result; it
+# does not recompute the irrigation numbers (aside from
+# recomputing the no-rain figures as a display-time fallback
+# when they were not already stored).
+# ============================================================
 
 def show_agriculture_result():
 
@@ -5057,6 +6112,32 @@ def show_agriculture_result():
         )
 
 
+# ============================================================
+# [34] MAIN PAGE CONTROLLER
+# ------------------------------------------------------------
+# FUNCTION:
+#     show_agriculture()
+#
+# PURPOSE:
+# Top-level Streamlit page controller for the Agriculture page.
+#
+# ORDER OF OPERATIONS:
+#   1. Inject styles
+#   2. Voice ON/OFF toggle
+#   3. Play welcome voice (once)
+#   4. Page title + intro
+#   5. Intro "agri-card"
+#   6. Location & Date section (triggers rainfall prediction)
+#   7. Main input panel (weather -> land -> crop -> growth ->
+#      reference -> soil -> existing water -> crop water need ->
+#      irrigation system -> Calculate button)
+#   8. Result display
+#   9. Process queued voice + render voice player
+#
+# CHANGE HERE IF:
+# - the overall page order needs to change.
+# ============================================================
+
 def show_agriculture(
     df,
     model,
@@ -5111,3 +6192,111 @@ def show_agriculture(
     process_voice_queue()
 
     render_voice_player()
+
+
+# ============================================================
+#                  END OF FILE
+# ============================================================
+#
+# QUICK DEVELOPER REFERENCE
+# ------------------------------------------------------------
+#
+# If you need to change...
+#
+# Welcome voice text
+#       -> [02]
+#
+# Welcome voice trigger
+#       -> [03]
+#
+# Voice on/off
+#       -> [04]
+#
+# Page CSS
+#       -> [05]
+#
+# Bangla number format
+#       -> [06]
+#
+# Irrigation time text
+#       -> [07]
+#
+# Bangla month names
+#       -> [08]
+#
+# Date display / voice text
+#       -> [09] / [10]
+#
+# Voice input helper
+#       -> [11]
+#
+# Section heading style
+#       -> [12]
+#
+# Section-entry voice
+#       -> [13]
+#
+# Selection-change voice
+#       -> [14]
+#
+# Voice confirmation wording
+#       -> [15]
+#
+# Next-step voice instruction
+#       -> [16]
+#
+# Input voice callback / irrigation-method branching
+#       -> [17]
+#
+# Automatic rainfall prediction for Agriculture
+#       -> [18]
+#
+# Bangla location name tables
+#       -> [19]
+#
+# Bangla name lookup
+#       -> [20]
+#
+# Bangla location label
+#       -> [21]
+#
+# Station/date selection
+#       -> [22]
+#
+# Weather & rainfall Auto/Manual
+#       -> [23]
+#
+# Land information
+#       -> [24]
+#
+# Crop / season selection
+#       -> [25]
+#
+# Growth stage determination UI
+#       -> [26]
+#
+# Crop reference card
+#       -> [27]
+#
+# Soil information
+#       -> [28]
+#
+# Existing water estimation
+#       -> [29]
+#
+# Crop water requirement (ET0 x Kc / Manual)
+#       -> [30]
+#
+# Irrigation method / efficiency inputs
+#       -> [31]
+#
+# Validation + calculation trigger
+#       -> [32]
+#
+# Result cards / recommendations / details expander
+#       -> [33]
+#
+# Overall page order
+#       -> [34]
+#
+# ============================================================
