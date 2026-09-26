@@ -594,7 +594,7 @@ def agriculture_voice_toggle():
     with vcol2:
 
         voice_on = st.toggle(
-            "🔊 ভয়েস (Voice)",
+            "🔊 শুনুন ও নির্দেশনা পান | Listen & Get Guidance (Voice)",
             key="agriculture_voice_toggle"
         )
 
@@ -6372,24 +6372,19 @@ def show_agriculture(
     start_agriculture_welcome()
 
     st.title(
-        "Smart Agriculture & Irrigation"
+        "🌱⚙️💧 স্মার্ট কৃষি ও সেচ . Smart Agriculture & Irrigation"
     )
 
     st.caption(
-        "ফসল, মৌসুম, রোপণ/বপনের তারিখ, জমির পরিমাণ, "
-        "মাটির ধরন, বৃষ্টির পূর্বাভাস এবং জমিতে থাকা পানি "
-        "অনুযায়ী সেচের পানি হিসাব করুন।"
+        "আপনার ফসল ও জমির তথ্য অনুযায়ী সহজে কৃষি ও সেচের পরামর্শ পান।"
     )
 
     st.markdown(
         """
         <div class='agri-card'>
-            <h3>Smart Irrigation Recommendation</h3>
+            <h3>🌱💧 স্মার্ট সেচ পরামর্শ • Smart Irrigation Recommendation</h3>
             <p>
-            ফসলের মৌসুম, প্রকৃত রোপণ/বপনের তারিখ,
-            বৃদ্ধি পর্যায়, জমির পরিমাণ, বৃষ্টির পূর্বাভাস
-            এবং ET0 ব্যবহার করে প্রয়োজনীয় সেচের পরিমাণ
-            হিসাব করা হবে।
+            বৃষ্টির পূর্বাভাস ও জমিতে থাকা পানির পরিমাণ অনুযায়ী সেচের প্রয়োজন এবং প্রয়োজনীয় পানির পরিমাণ জানুন।
             </p>
         </div>
         """,

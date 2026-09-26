@@ -332,26 +332,26 @@ def show_home(df):
     # ========================================================
     #
     # Button text:
-    #     🌱 Smart Agriculture (কৃষি সেচ ব্যবস্থা)
+    #     🌱 Agriculture Irrigation (কৃষি সেচ ব্যবস্থা)
     #
     # CURRENT ROUTE VALUE:
-    #     🌱 Agriculture
+    #     🌱 Agriculture Irrigation (কৃষি সেচ ব্যবস্থা)
     #
     # IMPORTANT:
     # This exact value is preserved from the supplied code.
     # ========================================================
 
+    # ========================================================
+
     if b.button(
-
-        "🌱 Smart Agriculture (কৃষি সেচ ব্যবস্থা)",
-
-       width="stretch",
-
+       "🌱 Agriculture Irrigation (কৃষি সেচ ব্যবস্থা)"
+,
+        width="stretch",
         type="primary"
-
     ):
 
-        st.session_state.page = "🌱 Agriculture "
+        st.session_state.page = "🌱 Agriculture Irrigation (কৃষি সেচ ব্যবস্থা)"
+
 
         st.rerun()
 
