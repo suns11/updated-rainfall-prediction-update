@@ -269,19 +269,19 @@ WATER_DEPTH_OPTIONS = {
     "পানি নেই (No Water)": 0,
 
     # Bangla water-depth option।
-    "আধা আঙুল (Half Finger)": 8,
+    "আধা আঙুল (Half Finger)": 2,
 
     # Bangla water-depth option।
-    "১ আঙুল (One Finger)": 15,
+    "১ আঙুল (One Finger)": 4,
 
     # Bangla water-depth option।
-    "২ আঙুল (Two Fingers)": 30,
+    "২ আঙুল (Two Fingers)": 8,
 
     # Bangla water-depth option।
-    "৩ আঙুল (Three Fingers)": 45,
+    "৩ আঙুল (Three Fingers)": 12,
 
     # Bangla water-depth option।
-    "৪ আঙুল (Four Fingers)": 60
+    "৪ আঙুল (Four Fingers)": 16
 
 }
 
@@ -1597,11 +1597,36 @@ def calculate_effective_rainfall(
         # Higher rainfall-এর 65% effective ধরা।
         return predicted_rain_mm * 0.65
 
-
 # ============================================================
 # [17] MAIN IRRIGATION CALCULATION
 # ============================================================
 # Agriculture system-এর মূল irrigation water calculation।
+#
+# Main calculation flow:
+#
+#       ET0
+#        ↓
+#       Kc
+#        ↓
+#     Crop Water Need
+#        ↓
+# Effective Rain + Existing Field Water
+#        ↓
+#   Net Water Needed
+#        ↓
+# Irrigation Efficiency
+#        ↓
+# Gross Water Requirement
+#        ↓
+# Liter / m³
+#
+# IMPORTANT:
+# Existing water এখানে user-provided estimated field-water
+# depth হিসেবে ব্যবহৃত হয়।
+#
+# এটি exact root-zone available soil water measurement
+# হিসেবে দাবি করা হচ্ছে না।
+# ============================================================
 def calculate_irrigation(
 
     land_area,
@@ -1633,6 +1658,12 @@ def calculate_irrigation(
     area_m2 = convert_area_to_m2(
         land_area,
         area_unit
+    )
+
+    # Negative/invalid area prevent করা।
+    area_m2 = max(
+        float(area_m2),
+        0.0
     )
 
 
@@ -1718,9 +1749,20 @@ def calculate_irrigation(
 
 
     # ========================================================
-    # [17-F] AVAILABLE WATER
+    # [17-F] AVAILABLE FIELD WATER
     # ========================================================
     # Existing field water negative হতে দেওয়া হবে না।
+    #
+    # IMPORTANT:
+    # এখানে সরাসরি available_water ব্যবহার করা হচ্ছে।
+    # কোনো undefined variable যেমন
+    # "available_field_water" ব্যবহার করা হয়নি।
+    #
+    # User-provided existing water depth-কে simplified
+    # daily irrigation balance-এর estimated available
+    # field-water amount হিসেবে ধরা হচ্ছে।
+    # ========================================================
+
     available_water = max(
         float(existing_water_mm),
         0.0
@@ -1730,15 +1772,19 @@ def calculate_irrigation(
     # ========================================================
     # [17-G] NET IRRIGATION REQUIREMENT
     # ========================================================
-    # Net water:
+    # Simplified daily water balance:
+    #
+    # Net Irrigation =
     #
     # Crop Water Need
     #       -
-    # Effective Rain
+    # Effective Rainfall
     #       -
-    # Existing Water
+    # Available Field Water
     #
-    # Minimum 0।
+    # Minimum irrigation requirement = 0.
+    # ========================================================
+
     net_water_needed = max(
         crop_water_need
         -
@@ -1753,6 +1799,11 @@ def calculate_irrigation(
     # [17-H] IRRIGATION EFFICIENCY
     # ========================================================
     # Percentage → decimal এবং valid range।
+    #
+    # Minimum 10% এবং maximum 100% রাখা হচ্ছে
+    # যাতে division-by-zero বা invalid efficiency না হয়।
+    # ========================================================
+
     efficiency = max(
         min(
             float(
@@ -1805,6 +1856,7 @@ def calculate_irrigation(
         # English status।
         status_en = "No irrigation needed today"
 
+
     # Small requirement।
     elif net_water_needed <= 3:
 
@@ -1813,7 +1865,9 @@ def calculate_irrigation(
         # Bangla status।
         status_bn = "অল্প পরিমাণ সেচ দিন"
 
+        # English status।
         status_en = "Light irrigation recommended"
+
 
     # Medium requirement।
     elif net_water_needed <= 7:
@@ -1823,7 +1877,9 @@ def calculate_irrigation(
         # Bangla status।
         status_bn = "মাঝারি পরিমাণ সেচ দিন"
 
+        # English status।
         status_en = "Moderate irrigation recommended"
+
 
     # High requirement।
     else:
@@ -1833,13 +1889,20 @@ def calculate_irrigation(
         # Bangla status।
         status_bn = "বেশি পরিমাণ সেচ প্রয়োজন"
 
+        # English status।
         status_en = "High irrigation requirement"
 
 
     # ========================================================
     # [17-L] FINAL IRRIGATION RESULT
     # ========================================================
-    # Calculation-এর সব important output dictionary হিসেবে return।
+    # Calculation-এর সব important output dictionary হিসেবে
+    # return করা হচ্ছে।
+    #
+    # Existing keys রাখা হয়েছে যাতে
+    # views/agriculture.py-এর কোনো compatibility problem না হয়.
+    # ========================================================
+
     return {
 
         # Land area in m²।
@@ -1874,11 +1937,14 @@ def calculate_irrigation(
         # Effective rainfall।
         "effective_rain": effective_rain,
 
-        # Existing water।
+        # Existing field water।
         "existing_water": available_water,
 
-        # Same existing water under another key।
+        # Same value under compatibility key।
         "available_water": available_water,
+
+        # Explicit available field-water key।
+        "available_field_water_mm": available_water,
 
         # Net irrigation requirement।
         "net_water_needed": net_water_needed,
@@ -1911,19 +1977,18 @@ def calculate_irrigation(
             )
         ),
 
-        # Selected soil type.
+        # Selected soil type।
         "soil_type": soil_type,
 
         # Internal status।
         "status": status,
 
-        # Bangla status.
+        # Bangla status।
         "status_bn": status_bn,
 
-        # English status.
+        # English status।
         "status_en": status_en
     }
-
 
 # ============================================================
 # [18] IRRIGATION METHOD WATER FLOW

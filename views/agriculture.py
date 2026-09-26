@@ -1,4 +1,4 @@
-# ============================================================
+﻿# ============================================================
 # ============================================================
 #          SMART AGRICULTURE & IRRIGATION PAGE — DEVELOPER GUIDE
 # ============================================================
@@ -877,33 +877,52 @@ def inject_agriculture_styles():
             color: rgba(255,255,255,.85);
             margin-left: 4px;
         }
-
         .summary-card {
             border-radius: 16px;
             padding: 18px 20px;
-            background: #ffffff;
-            border: 1px solid #dfe8e4;
+            background-color: #ffffff !important;
+            border: 1px solid #dfe8e4 !important;
             margin: 4px 0 14px 0;
+            color: #1f2d3d !important;
         }
 
         .summary-card .summary-title {
             font-size: 15px;
             font-weight: 700;
-            color: #0b7f59;
+            color: #0b7f59 !important;
             margin-bottom: 10px;
         }
 
         .summary-card ul {
             margin: 0;
-            padding-left: 18px;
+            padding-left: 22px;
+            color: #1f2d3d !important;
         }
 
         .summary-card li {
             font-size: 15px;
             line-height: 1.9;
-            color: #1f2d3d;
+            color: #1f2d3d !important;
+            background: transparent !important;
         }
 
+        .summary-card li::marker {
+            color: #0b7f59 !important;
+        }
+
+        .summary-card li strong,
+        .summary-card li b {
+            color: #102a43 !important;
+            font-weight: 700;
+        }
+
+        .summary-card p {
+            color: #1f2d3d !important;
+        }
+
+        .summary-card span {
+            color: #1f2d3d !important;
+        }
         .info-card {
             border-radius: 16px;
             padding: 18px 20px;
@@ -1006,23 +1025,20 @@ def bn_num(
 # CHANGE HERE IF:
 # - irrigation-time wording/rounding needs to change.
 # ============================================================
-
 def format_irrigation_time_bn(hours):
     """
-    ঘণ্টাকে বাংলায় "X ঘণ্টা Y মিনিট" আকারে দেখায়।
+    Farmer-friendly irrigation time display.
 
-    - ১ ঘণ্টার কম হলে শুধু মিনিট দেখাবে (যেমন: ৪৫ মিনিট)
-    - ১ ঘণ্টা বা তার বেশি হলে ঘণ্টা ও মিনিট দুটোই দেখাবে
-      (যেমন: ২ ঘণ্টা ৩০ মিনিট)
-    - পুরো ঘণ্টা হলে শুধু ঘণ্টা দেখাবে (যেমন: ৩ ঘণ্টা)
+    - ৫ মিনিটের কম → ৫ মিনিটের কম
+    - ৫–১৫ মিনিট → প্রায় ১৫ মিনিট
+    - ১৫–৩০ মিনিট → প্রায় ৩০ মিনিট
+    - ৩০ মিনিটের বেশি → ঘণ্টা ও মিনিট
     """
 
     try:
 
-        total_minutes = int(
-            round(
-                float(hours) * 60
-            )
+        total_minutes = (
+            float(hours) * 60
         )
 
     except Exception:
@@ -1031,27 +1047,48 @@ def format_irrigation_time_bn(hours):
 
     if total_minutes <= 0:
 
-        return "১ মিনিটের কম"
+        return "৫ মিনিটের কম"
 
-    h = total_minutes // 60
-    m = total_minutes % 60
+    # ৫ মিনিটের কম
+    if total_minutes < 5:
 
-    parts = []
+        return "৫ মিনিটের কম"
 
-    if h > 0:
+    # ৫–১৫ মিনিট
+    elif total_minutes <= 15:
 
-        parts.append(
-            f"{bn_num(h, 0)} ঘণ্টা"
+        return "প্রায় ১৫ মিনিট"
+
+    # ১৫–৩০ মিনিট
+    elif total_minutes <= 30:
+
+        return "প্রায় ৩০ মিনিট"
+
+    # ৩০ মিনিটের বেশি
+    else:
+
+        total_minutes_rounded = round(
+            total_minutes
         )
 
-    if m > 0:
+        h = total_minutes_rounded // 60
+        m = total_minutes_rounded % 60
 
-        parts.append(
-            f"{bn_num(m, 0)} মিনিট"
-        )
+        parts = []
 
-    return " ".join(parts)
+        if h > 0:
 
+            parts.append(
+                f"{bn_num(h, 0)} ঘণ্টা"
+            )
+
+        if m > 0:
+
+            parts.append(
+                f"{bn_num(m, 0)} মিনিট"
+            )
+
+        return " ".join(parts)
 
 # ============================================================
 # [08] BANGLA MONTH NAMES
@@ -3767,7 +3804,7 @@ def planting_growth_section(
 #
 # CHANGE HERE IF:
 # - the reference-card fields/wording need to change.
-# ============================================================
+
 
 def crop_reference_section(
     crop_label,
@@ -3776,82 +3813,106 @@ def crop_reference_section(
 ):
 
     if not crop_reference:
-
         return
 
+    # --------------------------------------------------------
+    # Cultivar
+    # --------------------------------------------------------
     cultivar = (
-        crop_reference.get(
-            "cultivar"
-        )
-        or
-        "N/A"
+        crop_reference.get("cultivar")
+        or "N/A"
     )
 
+    # --------------------------------------------------------
+    # Reference Duration
+    # --------------------------------------------------------
     duration_row = ""
 
-    if (
-        crop_reference.get(
-            "duration_days"
-        )
-        is not None
-    ):
-
+    if crop_reference.get("duration_days") is not None:
         duration_row = (
-            f"<p>রেফারেন্স সময়কাল "
-            f"(Reference Duration): "
-            f"{bn_num(crop_reference['duration_days'], 0)} দিন</p>"
+            f"""
+            <p>
+                রেফারেন্স সময়কাল
+                (Reference Duration):
+                {bn_num(crop_reference['duration_days'], 0)} দিন
+            </p>
+            """
         )
 
+    # --------------------------------------------------------
+    # Seasonal CWR
+    # --------------------------------------------------------
     cwr_row = ""
 
-    if (
-        crop_reference.get(
-            "cwr_mm"
-        )
-        is not None
-    ):
-
+    if crop_reference.get("cwr_mm") is not None:
         cwr_row = (
-            f"<p>মৌসুমি ফসলের পানির চাহিদা "
-            f"(Seasonal CWR Reference): "
-            f"{bn_num(crop_reference['cwr_mm'], 0)} mm/season</p>"
+            f"""
+            <p>
+                মৌসুমি ফসলের পানির চাহিদা
+                (Seasonal CWR Reference):
+                {bn_num(crop_reference['cwr_mm'], 0)} mm/season
+            </p>
+            """
         )
 
+    # --------------------------------------------------------
+    # Seasonal IWR
+    # --------------------------------------------------------
     iwr_row = ""
 
-    if (
-        crop_reference.get(
-            "iwr_mm"
-        )
-        is not None
-    ):
-
+    if crop_reference.get("iwr_mm") is not None:
         iwr_row = (
-            f"<p>মৌসুমি সেচের রেফারেন্স "
-            f"(Seasonal IWR Reference): "
-            f"{bn_num(crop_reference['iwr_mm'], 0)} mm/season</p>"
+            f"""
+            <p>
+                মৌসুমি সেচের রেফারেন্স
+                (Seasonal IWR Reference):
+                {bn_num(crop_reference['iwr_mm'], 0)} mm/season
+            </p>
+            """
         )
 
-    st.markdown(
-        f"""
-        <div class='agri-card'>
-            <h3>ফসলের রেফারেন্স তথ্য (Crop Reference Information)</h3>
-            <p>ফসল (Crop): {crop_label}</p>
-            <p>মৌসুম (Season): {season_label}</p>
-            <p>জাত (Cultivar): {cultivar}</p>
-            {duration_row}
-            {cwr_row}
-            {iwr_row}
-            <p style="font-size:13px; opacity:.75; margin-top:8px;">
-                নোট: CWR/IWR এখানে seasonal reference। এগুলো আজকের
-                daily irrigation requirement নয়।
-            </p>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
+    # --------------------------------------------------------
+    # Crop Reference Card
+    # --------------------------------------------------------
+    html = f"""
+    <div class="agri-card">
 
+        <h3>
+            ফসলের রেফারেন্স তথ্য
+            (Crop Reference Information)
+        </h3>
 
+        <p>
+            ফসল (Crop): {crop_label}
+        </p>
+
+        <p>
+            মৌসুম (Season): {season_label}
+        </p>
+
+        <p>
+            জাত (Cultivar): {cultivar}
+        </p>
+
+        {duration_row}
+
+        {cwr_row}
+
+        {iwr_row}
+
+        <p style="
+            font-size:13px;
+            opacity:.75;
+            margin-top:8px;
+        ">
+            নোট: CWR/IWR এখানে seasonal reference।
+            এগুলো আজকের daily irrigation requirement নয়।
+        </p>
+
+    </div>
+    """
+
+    st.html(html)
 # ============================================================
 # [28] SOIL INFORMATION SECTION
 # ------------------------------------------------------------
@@ -5365,7 +5426,6 @@ def _agriculture_input_panel():
                 f"(Irrigation calculation failed): {exc}"
             )
 
-
 # ============================================================
 # [33] RESULT DISPLAY
 # ------------------------------------------------------------
@@ -5408,6 +5468,106 @@ def _agriculture_input_panel():
 # recomputing the no-rain figures as a display-time fallback
 # when they were not already stored).
 # ============================================================
+
+
+def format_irrigation_time_bn(hours):
+    """
+    Farmer-friendly irrigation time display.
+
+    - ৫ মিনিটের কম → ৫ মিনিটের কম
+    - ৫–১৫ মিনিট → প্রায় ১৫ মিনিট
+    - ১৫–৩০ মিনিট → প্রায় ৩০ মিনিট
+    - ৩০ মিনিটের বেশি → প্রায় ঘণ্টা ও মিনিট
+    """
+
+    try:
+
+        total_minutes = (
+            float(hours) * 60
+        )
+
+    except Exception:
+
+        return "N/A"
+
+    if total_minutes <= 0:
+
+        return "৫ মিনিটের কম"
+
+    # ৫ মিনিটের কম
+    if total_minutes < 5:
+
+        return "৫ মিনিটের কম"
+
+    # ৫–১৫ মিনিট
+    elif total_minutes <= 15:
+
+        return "প্রায় ১৫ মিনিট"
+
+    # ১৫–৩০ মিনিট
+    elif total_minutes <= 30:
+
+        return "প্রায় ৩০ মিনিট"
+
+    # ৩০ মিনিটের বেশি
+    else:
+
+        total_minutes_rounded = round(
+            total_minutes
+        )
+
+        h = (
+            total_minutes_rounded // 60
+        )
+
+        m = (
+            total_minutes_rounded % 60
+        )
+
+        parts = []
+
+        if h > 0:
+
+            parts.append(
+                f"{bn_num(h, 0)} ঘণ্টা"
+            )
+
+        if m > 0:
+
+            parts.append(
+                f"{bn_num(m, 0)} মিনিট"
+            )
+
+        if parts:
+
+            return (
+                "প্রায় "
+                +
+                " ".join(parts)
+            )
+
+        return "৫ মিনিটের কম"
+
+
+def _clean_display_proy(text):
+    """
+    Display text-এ 'প্রায় প্রায়' হলে
+    শুধু একবার 'প্রায়' রাখে।
+    """
+
+    if not text:
+
+        return text
+
+    while "প্রায় প্রায়" in text:
+
+        text = text.replace(
+            "প্রায় প্রায়",
+            "প্রায়"
+        )
+
+    return text
+
 
 def show_agriculture_result():
 
@@ -5503,6 +5663,10 @@ def show_agriculture_result():
         "irrigation_time_hours"
     )
 
+    no_rain_time_hours = data.get(
+        "no_rain_time_hours"
+    )
+
     # ================================================================
     # 1) HEADLINE CARD
     #    Only the two numbers a farmer actually needs right now:
@@ -5515,24 +5679,32 @@ def show_agriculture_result():
 
         time_html = ""
 
-        if (
-            irrigation_time_hours is not None
-            and float(irrigation_time_hours) > 0
-        ):
+        if irrigation_time_hours is not None:
 
-            # NOTE:
-            # Built as a single line (no leading/trailing newline or
-            # indentation inside the f-string) and .strip()-ed, so
-            # this never leaves a blank/whitespace-only line inside
-            # the outer HTML block below. A blank line there makes
-            # Streamlit's markdown parser end the HTML block early,
-            # which used to leak a literal "</div>" onto the page.
-            time_html = (
-                f'<div class="metric-block">'
-                f'<div class="metric-label">আনুমানিক সেচের সময় (Irrigation Time)</div>'
-                f'<div class="metric-value">{format_irrigation_time_bn(irrigation_time_hours)}</div>'
-                f'</div>'
-            ).strip()
+            irrigation_time_text = (
+                format_irrigation_time_bn(
+                    irrigation_time_hours
+                )
+            )
+
+            if irrigation_time_text == "N/A":
+
+                irrigation_time_text = ""
+
+            irrigation_time_text = (
+                _clean_display_proy(
+                    irrigation_time_text
+                )
+            )
+
+            if irrigation_time_text:
+
+                time_html = (
+                    f'<div class="metric-block">'
+                    f'<div class="metric-label">আনুমানিক সেচের সময় (Irrigation Time)</div>'
+                    f'<div class="metric-value">{irrigation_time_text}</div>'
+                    f'</div>'
+                ).strip()
 
         st.markdown(
             f"""
@@ -5608,13 +5780,58 @@ def show_agriculture_result():
             "পূরণ করতে যথেষ্ট, তাই আজ অতিরিক্ত সেচ লাগবে না।"
         )
 
+    # ================================================================
+    # NO-RAIN SCENARIO
+    #    Show only:
+    #    - Required water in liters
+    #    - Approximate irrigation time
+    #    No mm is shown here.
+    # ================================================================
+
     if no_rain_net_mm > 0:
 
-        summary_lines.append(
+        no_rain_time_text = ""
+
+        if no_rain_time_hours is not None:
+
+            no_rain_time_text = (
+                format_irrigation_time_bn(
+                    no_rain_time_hours
+                )
+            )
+
+            if no_rain_time_text == "N/A":
+
+                no_rain_time_text = ""
+
+            no_rain_time_text = (
+                _clean_display_proy(
+                    no_rain_time_text
+                )
+            )
+
+        no_rain_summary = (
             f"আজ যদি কোনো বৃষ্টি না হয়, তাহলে প্রায় "
-            f"<b>{bn_num(no_rain_gross_mm, 1)} mm</b> "
-            f"({bn_num(no_rain_water_liters, 0, True)} লিটার) "
+            f"<b>{bn_num(no_rain_water_liters, 0, True)} লিটার</b> "
             f"পানি সেচ দিতে হতে পারে।"
+        )
+
+        if no_rain_time_text:
+
+            no_rain_summary += (
+                f" এই পানি দিতে "
+                f"<b>{no_rain_time_text}</b> "
+                f"সেচ চালাতে হবে।"
+            )
+
+        no_rain_summary = (
+            _clean_display_proy(
+                no_rain_summary
+            )
+        )
+
+        summary_lines.append(
+            no_rain_summary
         )
 
     else:
@@ -5624,13 +5841,16 @@ def show_agriculture_result():
         )
 
     summary_items_html = "".join(
-        f"<li>{line}</li>" for line in summary_lines
+        f"<li>{line}</li>"
+        for line in summary_lines
     )
 
     st.markdown(
         f"""
         <div class='summary-card'>
-            <div class="summary-title">সংক্ষিপ্ত বিবরণ (Summary)</div>
+            <div class="summary-title">
+                সংক্ষিপ্ত বিবরণ (Summary)
+            </div>
             <ul>
                 {summary_items_html}
             </ul>
@@ -5775,7 +5995,6 @@ def show_agriculture_result():
                 st.write(
                     f"• {rec}"
                 )
-
     # ================================================================
     # 4) EVERYTHING ELSE -> collapsed under one details expander
     #    (Crop Water Calculation, Water Balance, How Much Water,

@@ -1,92 +1,86 @@
-
-# ============================================================
 # VOICE.PY — QUICK DEVELOPER INDEX
-# ============================================================
-#
+
 # [01] IMPORTS
 #      → Required libraries and gTTS import
-#
+
 # [02] SESSION STATE INITIALIZATION
 #      → Voice-related Streamlit session state
-#
+
 # [03] GLOBAL VOICE ON / OFF SWITCH
 #      → Voice system enable / disable
-#
+
 # [04] BANGLA TEXT CLEANER
 #      → HTML, URL, Email, English words and symbols remove
-#
+
 # [05] BANGLA NUMBER CONVERSION
 #      → English digits → Bangla digits
-#
+
 # [06] PREPARE VOICE TEXT
 #      → Final TTS-ready Bangla text preparation
-#
+
 # [07] FORMAT IRRIGATION TIME
 #      → Decimal hours → ঘণ্টা + মিনিট
-#
+
 # [08] GENERATE MP3
 #      → gTTS দিয়ে Bangla MP3 তৈরি
-#
+
 # [09] SPEAK SEQUENCE
 #      → Multiple messages combine + duplicate check + audio generate
-#
+
 # [10] RESET VOICE HASH
 #      → Duplicate voice detection reset
-#
+
 # [11] GROWTH STAGE VOICE
 #      → Crop growth stage automatic voice
-#
+
 # [12] AGRICULTURE RESULT VOICE
 #      → সেচ লাগবে কি না + পানি + সময় + বৃষ্টি না হলে প্রয়োজন
-#
+
 # [13] SMART RECOMMENDATION VOICE
 #      → Smart Agriculture recommendation voice
-#
+
 # [14] SIMPLE SINGLE VOICE
 #      → Single text voice shortcut
-#
+
 # [15] PLAY VOICE
 #      → Simple voice wrapper
-#
+
 # [16] WELCOME VOICE
 #      → Welcome instruction voice
-#
+
 # [17] SELECTION VOICE
 #      → User selection-এর পর voice
-#
+
 # [18] SECTION VOICE
 #      → New section instruction voice
-#
+
 # [19] PROCESS VOICE QUEUE
 #      → Compatibility function for voice queue
-#
+
 # [20] BROWSER VOICE PLAYER
 #      → Streamlit browser-এ audio autoplay
-#
+
 # [21] CANCEL CURRENT VOICE
 #      → Current voice/audio cancel
-#
+
 # [22] RESET VOICE STATE
 #      → Complete voice state reset
-#
-# ------------------------------------------------------------
+
 # QUICK CHANGE GUIDE
-# ------------------------------------------------------------
-#
+
 # Voice wording change       → [11], [12], [13], [16]-[18]
-# Irrigation time format      → [07]
+# Irrigation time format     → [07]
 # English/Bangla text filter → [04]
-# Number format               → [05]
-# gTTS settings               → [08]
+# Number format              → [05]
+# gTTS settings              → [08]
 # Duplicate voice problem    → [09], [10]
 # Audio not playing          → [20]
 # Voice ON/OFF               → [03]
 # Voice reset/cancel         → [21], [22]
-#
 
-# ============================================================
+
 # [01] IMPORTS
-# ============================================================
+
 # Standard library: memory buffer, regular expression, hashing
 import io
 import re
@@ -99,9 +93,8 @@ import streamlit as st
 from gtts import gTTS
 
 
-# ============================================================
 # [02] SESSION STATE INITIALIZATION
-# ============================================================
+
 # এই function voice system-এর প্রয়োজনীয় session state তৈরি করে।
 def _init_voice_state():
 
@@ -120,9 +113,8 @@ def _init_voice_state():
             st.session_state[key] = value
 
 
-# ============================================================
 # [03] GLOBAL VOICE ON / OFF SWITCH
-# ============================================================
+
 # Voice বর্তমানে চালু আছে কি না তা check করে।
 def is_voice_enabled():
 
@@ -150,11 +142,10 @@ def set_voice_enabled(enabled):
     )
 
 
-# ============================================================
 # [04] BANGLA TEXT CLEANER
-# ============================================================
+
 # TTS-এর জন্য English UI words বাদ দিয়ে
-# Bangla-readable text তৈরি করে।
+# Bangla-readable text তৈরি করে.
 #
 # Bangla text এবং Bangla/English digits রাখা হয়।
 def clean_voice_text(text):
@@ -166,9 +157,8 @@ def clean_voice_text(text):
     # যেকোনো input-কে string করা হচ্ছে।
     text = str(text)
 
-    # --------------------------------------------------------
     # [04-A] HTML / TAG REMOVE
-    # --------------------------------------------------------
+
     # HTML tag voice-এর মধ্যে পড়া বন্ধ করা হচ্ছে।
     text = re.sub(
         r"<[^>]+>",
@@ -176,9 +166,8 @@ def clean_voice_text(text):
         text
     )
 
-    # --------------------------------------------------------
     # [04-B] URL REMOVE
-    # --------------------------------------------------------
+
     # Website URL voice থেকে বাদ দেওয়া হচ্ছে।
     text = re.sub(
         r"https?://\S+|www\.\S+",
@@ -187,9 +176,8 @@ def clean_voice_text(text):
         flags=re.IGNORECASE
     )
 
-    # --------------------------------------------------------
     # [04-C] EMAIL REMOVE
-    # --------------------------------------------------------
+
     # Email address voice থেকে বাদ দেওয়া হচ্ছে।
     text = re.sub(
         r"\S+@\S+\.\S+",
@@ -197,9 +185,8 @@ def clean_voice_text(text):
         text
     )
 
-    # --------------------------------------------------------
     # [04-D] ENGLISH WORDS REMOVE
-    # --------------------------------------------------------
+
     # English alphabet-এর শব্দগুলো voice text থেকে বাদ দেওয়া হচ্ছে।
     text = re.sub(
         r"[A-Za-z]+",
@@ -207,19 +194,17 @@ def clean_voice_text(text):
         text
     )
 
-    # --------------------------------------------------------
     # [04-E] COMMON SYMBOLS REMOVE
-    # --------------------------------------------------------
+
     # Underscore, slash, star, backslash ইত্যাদি বাদ দেওয়া হচ্ছে।
     text = re.sub(
-        r"[_/*\\]+",
+        r"[_/\\*]+",
         " ",
         text
     )
 
-    # --------------------------------------------------------
     # [04-F] ALLOWED CHARACTERS KEEP
-    # --------------------------------------------------------
+
     # Bangla Unicode, Bangla digits, English digits,
     # spaces এবং প্রয়োজনীয় punctuation রাখা হচ্ছে।
     text = re.sub(
@@ -228,9 +213,8 @@ def clean_voice_text(text):
         text
     )
 
-    # --------------------------------------------------------
     # [04-G] REMOVE DASHES
-    # --------------------------------------------------------
+
     # Dash-গুলো space দিয়ে replace করা হচ্ছে।
     text = re.sub(
         r"[-–—]+",
@@ -238,9 +222,8 @@ def clean_voice_text(text):
         text
     )
 
-    # --------------------------------------------------------
     # [04-H] REMOVE EMPTY BRACKETS
-    # --------------------------------------------------------
+
     # খালি bracket remove করা হচ্ছে।
     text = re.sub(
         r"\(\s*\)",
@@ -248,9 +231,15 @@ def clean_voice_text(text):
         text
     )
 
-    # --------------------------------------------------------
+    # Duplicate "প্রায়" remove
+    text = re.sub(
+        r"(প্রায়\s*){2,}",
+        "প্রায় ",
+        text
+    )
+
     # [04-I] NORMALIZE SPACES
-    # --------------------------------------------------------
+
     # Multiple spaces একটিতে convert করা হচ্ছে।
     text = re.sub(
         r"\s+",
@@ -262,9 +251,8 @@ def clean_voice_text(text):
     return text
 
 
-# ============================================================
 # [05] BANGLA NUMBER CONVERSION
-# ============================================================
+
 # English digits-কে Bangla digits-এ convert করে।
 def _english_digits_to_bangla(text):
 
@@ -278,9 +266,8 @@ def _english_digits_to_bangla(text):
     return text.translate(table)
 
 
-# ============================================================
 # [06] PREPARE VOICE TEXT
-# ============================================================
+
 # TTS generate করার আগে final text preparation করা হয়।
 def _prepare_voice_text(text):
 
@@ -307,25 +294,28 @@ def _prepare_voice_text(text):
     return text
 
 
-# ============================================================
 # [07] FORMAT IRRIGATION TIME
-# ============================================================
+
 # Decimal hours-কে farmer-friendly
-# ঘণ্টা + মিনিটে রূপান্তর করে।
+# সময়ের range / ঘণ্টা + মিনিটে রূপান্তর করে।
 #
-# Example:
-# 1.0  -> ১ ঘণ্টা
-# 1.5  -> ১ ঘণ্টা ৩০ মিনিট
-# 0.5  -> ৩০ মিনিট
-# 1.75 -> ১ ঘণ্টা ৪৫ মিনিট
-# 2.25 -> ২ ঘণ্টা ১৫ মিনিট
+# IMPORTANT:
+# এটি শুধু voice presentation-এর জন্য।
+# মূল irrigation calculation পরিবর্তন করে না।
+#
+# Examples:
+# 0.03  -> ৫ মিনিটের কম
+# 0.10  -> প্রায় ১৫ মিনিট
+# 0.30  -> প্রায় ১৫ মিনিট
+# 0.40  -> প্রায় ৩০ মিনিট
+# 0.60  -> প্রায় ৩০ মিনিট
+# 1.00  -> ১ ঘণ্টা
+# 1.50  -> ১ ঘণ্টা ৩০ মিনিট
 def _format_bangla_time(hours):
 
     # Invalid input handle করার চেষ্টা।
     try:
-        total_minutes = round(
-            float(hours) * 60
-        )
+        total_minutes = float(hours) * 60
     except (
         TypeError,
         ValueError
@@ -336,42 +326,56 @@ def _format_bangla_time(hours):
     if total_minutes <= 0:
         return ""
 
-    # Total minutes থেকে ঘণ্টা বের করা হচ্ছে।
-    total_hours = total_minutes // 60
+    # [07-A] LESS THAN 5 MINUTES
 
-    # Remaining minutes বের করা হচ্ছে।
-    minutes = total_minutes % 60
+    if total_minutes < 5:
+        return "৫ মিনিটের কম"
 
-    # Final time parts এখানে রাখা হবে।
-    parts = []
+    # [07-B] 5 TO 15 MINUTES
 
-    # --------------------------------------------------------
-    # [07-A] HOURS
-    # --------------------------------------------------------
-    if total_hours > 0:
+    elif total_minutes <= 15:
+        return "প্রায় ১৫ মিনিট"
 
-        # Bangla digit-এ ঘণ্টার value তৈরি করা হচ্ছে।
-        parts.append(
-            f"{_english_digits_to_bangla(str(total_hours))} ঘণ্টা"
+    # [07-C] MORE THAN 15 TO 30 MINUTES
+
+    elif total_minutes <= 30:
+        return "প্রায় ৩০ মিনিট"
+
+    # [07-D] MORE THAN 30 MINUTES
+
+    else:
+
+        total_minutes_rounded = round(
+            total_minutes
         )
 
-    # --------------------------------------------------------
-    # [07-B] MINUTES
-    # --------------------------------------------------------
-    if minutes > 0:
-
-        # Bangla digit-এ মিনিটের value তৈরি করা হচ্ছে।
-        parts.append(
-            f"{_english_digits_to_bangla(str(minutes))} মিনিট"
+        total_hours = (
+            total_minutes_rounded // 60
         )
 
-    # ঘণ্টা + মিনিট একসাথে return।
-    return " ".join(parts)
+        minutes = (
+            total_minutes_rounded % 60
+        )
+
+        parts = []
+
+        # ঘণ্টা
+        if total_hours > 0:
+            parts.append(
+                f"{_english_digits_to_bangla(str(total_hours))} ঘণ্টা"
+            )
+
+        # মিনিট
+        if minutes > 0:
+            parts.append(
+                f"{_english_digits_to_bangla(str(minutes))} মিনিট"
+            )
+
+        return " ".join(parts)
 
 
-# ============================================================
 # [08] GENERATE MP3
-# ============================================================
+
 # Cleaned Bangla text থেকে MP3 audio তৈরি করে।
 def _generate_audio(text):
 
@@ -414,9 +418,8 @@ def _generate_audio(text):
         return None
 
 
-# ============================================================
 # [09] SPEAK SEQUENCE
-# ============================================================
+
 # Multiple voice messages একসাথে একটি Bangla audio-তে
 # convert করে।
 def speak_sequence(
@@ -427,9 +430,8 @@ def speak_sequence(
     # Voice state initialize করা হচ্ছে।
     _init_voice_state()
 
-    # --------------------------------------------------------
     # [09-A] GLOBAL VOICE SWITCH
-    # --------------------------------------------------------
+
     # Voice OFF থাকলে এখানে stop।
     if not is_voice_enabled():
         return
@@ -438,9 +440,8 @@ def speak_sequence(
     if not messages:
         return
 
-    # --------------------------------------------------------
     # [09-B] PREPARE ALL MESSAGES
-    # --------------------------------------------------------
+
     # প্রতিটি message clean করে list-এ রাখা হচ্ছে।
     prepared_messages = []
 
@@ -461,25 +462,22 @@ def speak_sequence(
     if not prepared_messages:
         return
 
-    # --------------------------------------------------------
     # [09-C] COMBINE MESSAGES
-    # --------------------------------------------------------
+
     # Multiple message-এর মাঝে Bangla pause punctuation দেওয়া হচ্ছে।
     final_text = " । ".join(
         prepared_messages
     )
 
-    # --------------------------------------------------------
     # [09-D] CREATE TEXT HASH
-    # --------------------------------------------------------
+
     # একই text আবার generate না করার জন্য MD5 hash তৈরি।
     voice_hash = hashlib.md5(
         final_text.encode("utf-8")
     ).hexdigest()
 
-    # --------------------------------------------------------
     # [09-E] DUPLICATE CHECK
-    # --------------------------------------------------------
+
     # একই voice আগে generate হয়ে থাকলে নতুন audio তৈরি হবে না।
     if (
         st.session_state.get(
@@ -489,9 +487,8 @@ def speak_sequence(
     ):
         return
 
-    # --------------------------------------------------------
     # [09-F] GENERATE AUDIO
-    # --------------------------------------------------------
+
     # Final combined text থেকে MP3 generate।
     audio = _generate_audio(
         final_text
@@ -501,9 +498,8 @@ def speak_sequence(
     if audio is None:
         return
 
-    # --------------------------------------------------------
     # [09-G] SAVE AUDIO
-    # --------------------------------------------------------
+
     # Generated audio session state-এ রাখা হচ্ছে।
     st.session_state[
         "voice_audio"
@@ -526,9 +522,8 @@ def speak_sequence(
     )
 
 
-# ============================================================
 # [10] RESET VOICE HASH
-# ============================================================
+
 # Current voice-এর duplicate detection reset করে।
 def reset_voice_hash():
 
@@ -541,9 +536,8 @@ def reset_voice_hash():
     ] = None
 
 
-# ============================================================
 # [11] GROWTH STAGE VOICE
-# ============================================================
+
 # Automatically detected crop growth stage-এর জন্য voice।
 def growth_stage_auto_voice(
     stage_label,
@@ -557,10 +551,8 @@ def growth_stage_auto_voice(
     # Voice pause token।
     PAUSE_TOKEN = "।"
 
-    # --------------------------------------------------------
     # Bangla voice message:
     # ফসলের বর্তমান বৃদ্ধি পর্যায় জানানো হচ্ছে।
-    # --------------------------------------------------------
     messages = [
         (
             "স্বয়ংক্রিয়ভাবে আপনার ফসলের "
@@ -594,18 +586,16 @@ def growth_stage_auto_voice(
     )
 
 
-# ============================================================
 # [12] AGRICULTURE RESULT VOICE
-# ============================================================
-#
+
 # FARMER-FRIENDLY VOICE FLOW
 #
 # [12-A] সেচ লাগবে কিনা + কত পানি
 # [12-B] কত ঘণ্টা + কত মিনিট
 # [12-C] বৃষ্টি না হলে কত পানি + কত ঘণ্টা + কত মিনিট
 #
-# Technical calculation voice-এ বলা হবে না।
-# ============================================================
+# Technical calculation voice-এ বলা হবে।
+
 def agriculture_result_voice(
     irrigation_needed,
     water_liters=0,
@@ -617,9 +607,7 @@ def agriculture_result_voice(
     # Voice messages এখানে জমা হবে।
     messages = []
 
-    # ========================================================
     # [12-A] MAIN DECISION + HOW MUCH WATER
-    # ========================================================
 
     # যদি irrigation প্রয়োজন হয়।
     if irrigation_needed:
@@ -653,9 +641,7 @@ def agriculture_result_voice(
             "বৃষ্টির পানি বর্তমান প্রয়োজন মেটাতে যথেষ্ট।"
         )
 
-    # ========================================================
     # [12-B] IRRIGATION TIME
-    # ========================================================
 
     # Irrigation প্রয়োজন এবং time available হলে।
     if (
@@ -678,9 +664,7 @@ def agriculture_result_voice(
                 f"সময় লাগবে।"
             )
 
-    # ========================================================
     # [12-C] NO RAIN SCENARIO
-    # ========================================================
 
     # No-rain water value numeric করার চেষ্টা।
     try:
@@ -714,7 +698,7 @@ def agriculture_result_voice(
 
             # Bangla duration message।
             no_rain_line += (
-                f" এতে প্রায় "
+                f" এই পানি দিতে প্রায় "
                 f"{no_rain_time_text} "
                 f"সময় লাগবে।"
             )
@@ -724,9 +708,7 @@ def agriculture_result_voice(
             no_rain_line
         )
 
-    # ========================================================
     # [12-D] FINAL VOICE
-    # ========================================================
 
     # সব result message একসাথে voice করা হচ্ছে।
     speak_sequence(
@@ -734,9 +716,8 @@ def agriculture_result_voice(
     )
 
 
-# ============================================================
 # [13] SMART RECOMMENDATION VOICE
-# ============================================================
+
 # Agriculture recommendation-এর voice তৈরি করে।
 def agriculture_recommendation_voice(
     recommendations
@@ -771,9 +752,8 @@ def agriculture_recommendation_voice(
     )
 
 
-# ============================================================
 # [14] SIMPLE SINGLE VOICE
-# ============================================================
+
 # একটি সাধারণ text voice করার shortcut।
 def speak(
     text,
@@ -791,9 +771,8 @@ def speak(
     )
 
 
-# ============================================================
 # [15] PLAY VOICE
-# ============================================================
+
 # speak() function-এর simple wrapper।
 def play_voice(
     text,
@@ -807,9 +786,8 @@ def play_voice(
     )
 
 
-# ============================================================
 # [16] WELCOME VOICE
-# ============================================================
+
 # Agriculture page বা অন্য page-এর welcome voice।
 def play_welcome(text):
 
@@ -820,9 +798,8 @@ def play_welcome(text):
     )
 
 
-# ============================================================
 # [17] SELECTION VOICE
-# ============================================================
+
 # User কোনো selection করলে voice instruction দেওয়ার জন্য।
 def selection_voice(
     text,
@@ -842,9 +819,8 @@ def selection_voice(
     )
 
 
-# ============================================================
 # [18] SECTION VOICE
-# ============================================================
+
 # কোনো নতুন UI section শুরু হলে voice instruction দেওয়ার জন্য।
 def section_voice(
     text,
@@ -863,10 +839,9 @@ def section_voice(
     )
 
 
-# ============================================================
 # [19] PROCESS VOICE QUEUE
-# ============================================================
-# বর্তমানে আলাদা queue/thread ব্যবহার করা হচ্ছে না।
+
+# বর্তমানে আলাদা queue/thread ব্যবহার করা হচ্ছে না.
 #
 # Functionটি compatibility বজায় রাখার জন্য রাখা হয়েছে।
 def process_voice_queue():
@@ -875,10 +850,9 @@ def process_voice_queue():
     _init_voice_state()
 
 
-# ============================================================
 # [20] BROWSER VOICE PLAYER
-# ============================================================
-# Browser-এর ভিতরে Bangla audio play করবে।
+
+# Browser-এর ভিতরে Bangla audio play করবে.
 #
 # Streamlit Cloud compatible।
 # Server-side playsound ব্যবহার করা হচ্ছে না।
@@ -887,16 +861,14 @@ def render_voice_player():
     # Voice state initialize করা হচ্ছে।
     _init_voice_state()
 
-    # --------------------------------------------------------
     # [20-A] GLOBAL VOICE SWITCH
-    # --------------------------------------------------------
+
     # Voice OFF থাকলে player render হবে না।
     if not is_voice_enabled():
         return
 
-    # --------------------------------------------------------
     # [20-B] GET AUDIO STATE
-    # --------------------------------------------------------
+
     # Current generated audio নেওয়া হচ্ছে।
     audio = st.session_state.get(
         "voice_audio"
@@ -918,9 +890,8 @@ def render_voice_player():
     if not audio:
         return
 
-    # --------------------------------------------------------
     # [20-C] SAME AUDIO SHOULD NOT PLAY AGAIN
-    # --------------------------------------------------------
+
     # একই version ইতিমধ্যে render হয়ে থাকলে পুনরায় play নয়।
     if version == rendered_version:
         return
@@ -930,9 +901,8 @@ def render_voice_player():
         "voice_rendered_version"
     ] = version
 
-    # --------------------------------------------------------
     # [20-D] BROWSER AUDIO PLAYER
-    # --------------------------------------------------------
+
     # Browser-side audio player ব্যবহার করা হচ্ছে।
     st.audio(
         audio,
@@ -941,9 +911,8 @@ def render_voice_player():
     )
 
 
-# ============================================================
 # [21] CANCEL CURRENT VOICE
-# ============================================================
+
 # Current audio এবং hash cancel করে।
 def cancel_pending_voice():
 
@@ -972,9 +941,8 @@ def cancel_pending_voice():
     )
 
 
-# ============================================================
 # [22] RESET VOICE STATE
-# ============================================================
+
 # সম্পূর্ণ voice state reset করার জন্য।
 def reset_voice_state():
 
