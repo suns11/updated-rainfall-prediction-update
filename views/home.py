@@ -1,7 +1,7 @@
 
-# ============================================================
+
 # HOME.PY — QUICK DEVELOPER INDEX
-# ============================================================
+
 #
 # FILE PURPOSE
 # ------------------------------------------------------------
@@ -111,12 +111,12 @@
 #
 # Application behavior is unchanged.
 #
-# ============================================================
 
 
-# ============================================================
+
+
 # [01] IMPORTS
-# ============================================================
+
 #
 # Streamlit
 #     → UI and page navigation
@@ -127,16 +127,16 @@
 # Plotly Express
 #     → Rainfall charts
 #
-# ============================================================
+
 
 import streamlit as st
 import pandas as pd
 import plotly.express as px
 
 
-# ============================================================
+
 # [02] MAIN HOME PAGE FUNCTION
-# ============================================================
+
 #
 # FUNCTION:
 #     show_home(df)
@@ -162,14 +162,14 @@ import plotly.express as px
 #       ↓
 #     Rainfall Distribution
 #
-# ============================================================
+
 
 def show_home(df):
 
 
-    # ========================================================
+    
     # [03] HERO SECTION
-    # ========================================================
+    
     #
     # Displays:
     #     Project title
@@ -184,7 +184,7 @@ def show_home(df):
     # Do not put Python developer comments inside the
     # st.markdown() string.
     #
-    # ========================================================
+    
 
     st.markdown(
 
@@ -265,9 +265,9 @@ def show_home(df):
     )
 
 
-    # ========================================================
+    
     # [04] QUICK ACCESS SECTION
-    # ========================================================
+    
     #
     # Creates three navigation buttons:
     #
@@ -286,7 +286,7 @@ def show_home(df):
     # IMPORTANT:
     # Page names must match the main application router.
     #
-    # ========================================================
+    
 
     st.markdown(
 
@@ -300,9 +300,9 @@ def show_home(df):
     a, b, c = st.columns(3)
 
 
-    # ========================================================
+    
     # [04-A] RAINFALL PREDICTION BUTTON
-    # ========================================================
+    
     #
     # Button text:
     #     🔮 Rainfall Prediction
@@ -310,7 +310,7 @@ def show_home(df):
     # Route:
     #     🔮 Rain Prediction
     #
-    # ========================================================
+    
 
     if a.button(
 
@@ -327,9 +327,9 @@ def show_home(df):
         st.rerun()
 
 
-    # ========================================================
+    
     # [04-B] SMART AGRICULTURE BUTTON
-    # ========================================================
+    
     #
     # Button text:
     #     🌱 Agriculture Irrigation (কৃষি সেচ ব্যবস্থা)
@@ -339,9 +339,9 @@ def show_home(df):
     #
     # IMPORTANT:
     # This exact value is preserved from the supplied code.
-    # ========================================================
+    
 
-    # ========================================================
+    
 
     if b.button(
        "🌱 Agriculture Irrigation (কৃষি সেচ ব্যবস্থা)"
@@ -356,9 +356,9 @@ def show_home(df):
         st.rerun()
 
 
-    # ========================================================
+    
     # [04-C] ANALYTICS BUTTON
-    # ========================================================
+    
     #
     # Button text:
     #     📊 Analytics
@@ -366,7 +366,7 @@ def show_home(df):
     # Route:
     #     📊 Analytics
     #
-    # ========================================================
+    
 
     if c.button(
 
@@ -383,20 +383,20 @@ def show_home(df):
         st.rerun()
 
 
-    # ========================================================
+    
     # [04-D] SECTION DIVIDER
-    # ========================================================
+    
     #
     # Separates Quick Access from the chart section.
     #
-    # ========================================================
+    
 
     st.divider()
 
 
-    # ========================================================
+    
     # [05] ANALYSIS LAYOUT
-    # ========================================================
+    
     #
     # Creates two chart columns.
     #
@@ -409,7 +409,7 @@ def show_home(df):
     # CURRENT WIDTH:
     #     1.5 : 1
     #
-    # ========================================================
+    
 
     left, right = st.columns(
 
@@ -418,21 +418,21 @@ def show_home(df):
     )
 
 
-    # ========================================================
+    
     # [06] MONTHLY RAINFALL ANALYSIS
-    # ========================================================
+    
     #
     # Calculates average rainfall for each calendar month
     # and displays it as an area chart.
     #
-    # ========================================================
+    
 
     with left:
 
 
-        # ====================================================
+        
         # [06-A] MONTHLY AVERAGE CALCULATION
-        # ====================================================
+        
         #
         # Process:
         #
@@ -447,7 +447,7 @@ def show_home(df):
         # CURRENT CALCULATION:
         #     Average rainfall
         #
-        # ====================================================
+        
 
         monthly = (
 
@@ -483,9 +483,9 @@ def show_home(df):
         )
 
 
-        # ====================================================
+        
         # [06-B] MONTH NAME CONVERSION
-        # ====================================================
+        
         #
         # Converts month numbers into abbreviated month names:
         #
@@ -494,7 +494,7 @@ def show_home(df):
         #     ...
         #     12 → Dec
         #
-        # ====================================================
+        
 
         monthly["Month Name"] = (
 
@@ -511,9 +511,9 @@ def show_home(df):
         )
 
 
-        # ====================================================
+        
         # [06-C] MONTHLY AREA CHART
-        # ====================================================
+        
         #
         # X-axis:
         #     Month Name
@@ -524,7 +524,7 @@ def show_home(df):
         # Chart:
         #     Plotly Area Chart
         #
-        # ====================================================
+        
 
         fig = px.area(
 
@@ -539,9 +539,9 @@ def show_home(df):
         )
 
 
-        # ====================================================
+        
         # [06-D] MONTHLY CHART SETTINGS
-        # ====================================================
+        
         #
         # Y-axis:
         #     Rainfall (mm)
@@ -552,7 +552,7 @@ def show_home(df):
         #     hovermode = closest
         #     uirevision = constant
         #
-        # ====================================================
+        
 
         fig.update_yaxes(
 
@@ -569,13 +569,13 @@ def show_home(df):
         )
 
 
-        # ====================================================
+        
         # [06-E] MONTHLY CHART DISPLAY
-        # ====================================================
+        
         #
         # Displays the Plotly chart in Streamlit.
         #
-        # ====================================================
+        
 
         st.plotly_chart(
 
@@ -602,23 +602,23 @@ def show_home(df):
         )
 
 
-    # ========================================================
+    
     # [07] RAINFALL DISTRIBUTION ANALYSIS
-    # ========================================================
+    
     #
     # Displays rainfall distribution using a histogram.
     #
     # The chart uses only the latest 1000 rows after sorting
     # the dataframe by Date.
     #
-    # ========================================================
+    
 
     with right:
 
 
-        # ====================================================
+        
         # [07-A] SELECT LATEST 1000 RECORDS
-        # ====================================================
+        
         #
         # Process:
         #
@@ -630,7 +630,7 @@ def show_home(df):
         # This means latest 1000 rows, not necessarily
         # 1000 unique dates.
         #
-        # ====================================================
+        
 
         latest = (
 
@@ -643,9 +643,9 @@ def show_home(df):
         )
 
 
-        # ====================================================
+        
         # [07-B] RAINFALL HISTOGRAM
-        # ====================================================
+        
         #
         # X-axis:
         #     rain_sum
@@ -653,7 +653,7 @@ def show_home(df):
         # Number of bins:
         #     30
         #
-        # ====================================================
+        
 
         fig = px.histogram(
 
@@ -668,9 +668,9 @@ def show_home(df):
         )
 
 
-        # ====================================================
+        
         # [07-C] DISTRIBUTION CHART SETTINGS
-        # ====================================================
+        
         #
         # height:
         #     400
@@ -684,7 +684,7 @@ def show_home(df):
         # uirevision:
         #     constant
         #
-        # ====================================================
+        
 
         fig.update_layout(
             height=400,
@@ -694,13 +694,13 @@ def show_home(df):
         )
 
 
-        # ====================================================
+        
         # [07-D] DISTRIBUTION CHART DISPLAY
-        # ====================================================
+        
         #
         # Displays the rainfall histogram in Streamlit.
         #
-        # ====================================================
+        
 
         st.plotly_chart(
 
@@ -727,12 +727,12 @@ def show_home(df):
         )
 
 
-# ============================================================
+
 # END OF FILE
-# ============================================================
+
 #
 # FINAL DEVELOPER MAP
-# ============================================================
+
 #
 # [01] Imports
 #
@@ -761,9 +761,9 @@ def show_home(df):
 #            ├── [07-C] Chart Settings
 #            └── [07-D] Chart Display
 #
-# ============================================================
+
 # IMPORTANT
-# ============================================================
+
 #
 # This file:
 #
@@ -777,4 +777,4 @@ def show_home(df):
 #       → Perform irrigation calculations
 #       → Train the ML model
 #
-# ============================================================
+

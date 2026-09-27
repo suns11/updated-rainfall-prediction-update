@@ -993,6 +993,19 @@ def bn_num(
 
     try:
 
+        # ---- NEW: প্রথমে যদি input-এ আগে থেকে কোনো বাংলা digit
+        # মিশে থাকে (আংশিক convert হওয়া string), সেটা আগে
+        # ASCII digit-এ ফিরিয়ে আনা হচ্ছে, যাতে float() সঠিকভাবে
+        # পুরো সংখ্যাটা পড়তে পারে।
+        if isinstance(value, str):
+
+            value = value.translate(
+                str.maketrans(
+                    "০১২৩৪৫৬৭৮৯",
+                    "0123456789"
+                )
+            )
+
         if comma:
 
             text = f"{float(value):,.{decimals}f}"
@@ -1011,8 +1024,6 @@ def bn_num(
     except Exception:
 
         return "N/A"
-
-
 # ============================================================
 # [07] IRRIGATION TIME FORMATTING
 # ------------------------------------------------------------
@@ -2782,10 +2793,10 @@ def weather_information_section():
                 st.success(
                     f"""
                     বৃষ্টির পূর্বাভাস:
-                    {bn_num(predicted_rain, 2)} mm
+                    {bn_num(predicted_rain, 2)} (মিমি) mm
 
                     ET0:
-                    {bn_num(et0_value, 2)} mm/day
+                    {bn_num(et0_value, 2)} (মিমি/দিন)mm/day 
                     """
                 )
 
@@ -2861,7 +2872,7 @@ def weather_information_section():
 
                     predicted_rain = st.number_input(
                         "আজকের বৃষ্টির পরিমাণ "
-                        "(Today's Rainfall) mm",
+                        "(Today's Rainfall)মিমি mm",
                         min_value=0.0,
                         value=0.0,
                         step=0.5,
@@ -2889,7 +2900,7 @@ def weather_information_section():
 
                     et0_value = st.number_input(
                         "রেফারেন্স বাষ্পীভবন "
-                        "(ET0 / Reference Evapotranspiration) mm/day",
+                        "(ET0 / Reference Evapotranspiration) (মিমি/দিন) mm/day",
                         min_value=0.0,
                         value=4.0,
                         step=0.1,
@@ -2923,7 +2934,7 @@ def weather_information_section():
 
                 predicted_rain = st.number_input(
                     "আজকের বৃষ্টির পরিমাণ "
-                    "(Today's Rainfall) mm",
+                    "(Today's Rainfall) (মিমি) mm",
                     min_value=0.0,
                     value=0.0,
                     step=0.5,
@@ -2951,7 +2962,7 @@ def weather_information_section():
 
                 et0_value = st.number_input(
                     "রেফারেন্স বাষ্পীভবন "
-                    "(ET0 / Reference Evapotranspiration) mm/day",
+                    "(ET0 / Reference Evapotranspiration)(মিমি/দিন) mm/day",
                     min_value=0.0,
                     value=4.0,
                     step=0.1,
@@ -3850,7 +3861,7 @@ def crop_reference_section(
             <p>
                 মৌসুমি ফসলের পানির চাহিদা
                 (Seasonal CWR Reference):
-                {bn_num(crop_reference['cwr_mm'], 0)} mm/season
+                {bn_num(crop_reference['cwr_mm'], 0)}(মিমি) mm/season
             </p>
             """
         )
@@ -3866,7 +3877,7 @@ def crop_reference_section(
             <p>
                 মৌসুমি সেচের রেফারেন্স
                 (Seasonal IWR Reference):
-                {bn_num(crop_reference['iwr_mm'], 0)} mm/season
+                {bn_num(crop_reference['iwr_mm'], 0)}(মিমি) mm/season
             </p>
             """
         )
@@ -4118,11 +4129,11 @@ def existing_water_section(
             </div>
             <div class='info-row'>
                 <span class='label'>পানির গভীরতা (Water Depth)</span>
-                <span class='value'>{bn_num(existing_water_mm, 1)} mm</span>
+                <span class='value'>{bn_num(existing_water_mm, 1)}(মিমি) mm</span>
             </div>
             <div class='info-row'>
                 <span class='label'>মোট পানি (Total Water)</span>
-                <span class='value'>{bn_num(existing_water_volume['water_liters'], 0, True)} L</span>
+                <span class='value'>{bn_num(existing_water_volume['water_liters'], 0, True)} (লিটার)L</span>
             </div>
             <div class='info-row'>
                 <span class='label'>পানির পরিমাণ (Water Volume)</span>
@@ -4213,7 +4224,7 @@ def crop_water_requirement_section(
                 </div>
                 <div class='info-row'>
                     <span class='label'>ET0 (Reference Evapotranspiration)</span>
-                    <span class='value'>{bn_num(et0_value, 2)} mm/day</span>
+                    <span class='value'>{bn_num(et0_value, 2)} (মিমি/দিন) mm/day</span>
                 </div>
                 <div class='info-row'>
                     <span class='label'>ফসল সহগ (Crop Coefficient / Kc)</span>
@@ -4221,7 +4232,7 @@ def crop_water_requirement_section(
                 </div>
                 <div class='info-row'>
                     <span class='label'>দৈনিক পানির চাহিদা (ETc)</span>
-                    <span class='value'>{bn_num(automatic_etc_preview, 2)} mm/day</span>
+                    <span class='value'>{bn_num(automatic_etc_preview, 2)}(মিমি/দিন)  mm/day</span>
                 </div>
             </div>
             """,
@@ -4233,7 +4244,7 @@ def crop_water_requirement_section(
             st.warning(
                 f"""
                 আজ বৃষ্টি না হলেও এই ফসলের বর্তমান stage অনুযায়ী
-                আনুমানিক {bn_num(automatic_etc_preview, 2)} mm/day
+                আনুমানিক {bn_num(automatic_etc_preview, 2)} (মিমি/দিন) mm/day
                 পানি প্রয়োজন। জমিতে পর্যাপ্ত পানি না থাকলে
                 সেচ প্রয়োজন হতে পারে।
                 """
@@ -4319,7 +4330,7 @@ def crop_water_requirement_section(
 
             manual_crop_water_need_mm = st.number_input(
                 "দৈনিক ফসলের পানির চাহিদা "
-                "(Daily Crop Water Requirement) mm/day",
+                "(Daily Crop Water Requirement)(মিমি/দিন) mm/day",
                 min_value=0.0,
                 step=0.1,
                 key="agriculture_manual_crop_water_need",
@@ -4623,7 +4634,7 @@ def irrigation_system_section():
 
             sprinkler_flow_lph = st.number_input(
                 "প্রতি স্প্রিংকলারের পানির প্রবাহ "
-                "(Flow per Sprinkler) L/hour",
+                "(Flow per Sprinkler) (লিটার/ঘণ্টা)L/hour",
                 min_value=0.1,
                 value=None,
                 step=0.1,
@@ -5718,7 +5729,7 @@ def show_agriculture_result():
                     </div>
                     <div class="metric-block">
                         <div class="metric-label">সেচের পরিমাণ (Gross Irrigation)</div>
-                        <div class="metric-value">{bn_num(result['gross_water_mm'], 1)}<span class="metric-unit">mm</span></div>
+                        <div class="metric-value">{bn_num(result['gross_water_mm'], 1)}<span class="metric-unit">(মিমি)mm</span></div>
                     </div>
                     {time_html}
                 </div>
@@ -5737,11 +5748,11 @@ def show_agriculture_result():
                 <div class="metrics">
                     <div class="metric-block">
                         <div class="metric-label">জমিতে থাকা + বৃষ্টির পানি</div>
-                        <div class="metric-value">{bn_num(result['available_water'] + result['effective_rain'], 1)}<span class="metric-unit">mm</span></div>
+                        <div class="metric-value">{bn_num(result['available_water'] + result['effective_rain'], 1)}<span class="metric-unit">(মিমি)mm</span></div>
                     </div>
                     <div class="metric-block">
                         <div class="metric-label">ফসলের চাহিদা</div>
-                        <div class="metric-value">{bn_num(result['crop_water_need'], 1)}<span class="metric-unit">mm/day</span></div>
+                        <div class="metric-value">{bn_num(result['crop_water_need'], 1)}<span class="metric-unit">(মিমি/দিন)mm/day</span></div>
                     </div>
                 </div>
             </div>
@@ -5758,9 +5769,9 @@ def show_agriculture_result():
 
     summary_lines.append(
         f"ফসলের দৈনিক পানির চাহিদা "
-        f"<b>{bn_num(result['crop_water_need'], 2)} mm/day</b>, "
+        f"<b>{bn_num(result['crop_water_need'], 2)}(মিমি/দিন)  mm/day</b>, "
         f"যার মধ্যে বৃষ্টি ও জমিতে থাকা পানি থেকে "
-        f"<b>{bn_num(result['effective_rain'] + result['available_water'], 2)} mm</b> "
+        f"<b>{bn_num(result['effective_rain'] + result['available_water'], 2)}(মিমি) mm</b> "
         f"পাওয়া যাচ্ছে।"
     )
 
@@ -5768,8 +5779,8 @@ def show_agriculture_result():
 
         summary_lines.append(
             f"তাই নিট সেচের প্রয়োজন "
-            f"<b>{bn_num(result['net_water_needed'], 2)} mm</b> "
-            f"(মোট <b>{bn_num(result['gross_water_mm'], 2)} mm</b>, "
+            f"<b>{bn_num(result['net_water_needed'], 2)}(মিমি) mm</b> "
+            f"(মোট <b>{bn_num(result['gross_water_mm'], 2)}(মিমি) mm</b>, "
             f"সেচ দক্ষতা {bn_num(data['efficiency'], 0)}% ধরে)।"
         )
 
@@ -6014,7 +6025,7 @@ def show_agriculture_result():
 
         a.metric(
             "ET0",
-            f"{bn_num(result['et0_mm'], 2)} mm/day"
+            f"{bn_num(result['et0_mm'], 2)}মিমি/দিন mm/day"
         )
 
         b.metric(
@@ -6024,7 +6035,7 @@ def show_agriculture_result():
 
         c.metric(
             "ETc",
-            f"{bn_num(result['automatic_etc_mm'], 2)} mm/day"
+            f"{bn_num(result['automatic_etc_mm'], 2)}(মিমি/দিন) mm/day"
         )
 
         st.caption(
@@ -6033,7 +6044,7 @@ def show_agriculture_result():
                 if result.get("water_requirement_method") == "MANUAL"
                 else "ব্যবহৃত পদ্ধতি: ET0 × Kc (Automatic)"
             )
-            + f" → {bn_num(result['crop_water_need'], 2)} mm/day"
+            + f" → {bn_num(result['crop_water_need'], 2)}(মিমি/দিন)  mm/day"
         )
 
         st.divider()
@@ -6046,22 +6057,22 @@ def show_agriculture_result():
 
         a.metric(
             "কার্যকর বৃষ্টি",
-            f"{bn_num(result['effective_rain'], 2)} mm"
+            f"{bn_num(result['effective_rain'], 2)}(মিমি) mm"
         )
 
         b.metric(
             "জমিতে থাকা পানি",
-            f"{bn_num(result['available_water'], 2)} mm"
+            f"{bn_num(result['available_water'], 2)}(মিমি) mm"
         )
 
         c.metric(
             "নিট সেচ",
-            f"{bn_num(result['net_water_needed'], 2)} mm"
+            f"{bn_num(result['net_water_needed'], 2)} (মিমি) mm"
         )
 
         d.metric(
             "মোট সেচ",
-            f"{bn_num(result['gross_water_mm'], 2)} mm"
+            f"{bn_num(result['gross_water_mm'], 2)}(মিমি) mm"
         )
 
         st.divider()
@@ -6074,7 +6085,7 @@ def show_agriculture_result():
 
         a.metric(
             "লিটার",
-            f"{bn_num(result['water_liters'], 0, True)} L"
+            f"{bn_num(result['water_liters'], 0, True)} (লিটার)L"
         )
 
         b.metric(
@@ -6148,17 +6159,17 @@ def show_agriculture_result():
 
         a.metric(
             "নিট চাহিদা",
-            f"{bn_num(no_rain_net_mm, 2)} mm"
+            f"{bn_num(no_rain_net_mm, 2)}(মিমি) mm"
         )
 
         b.metric(
             "মোট সেচ",
-            f"{bn_num(no_rain_gross_mm, 2)} mm"
+            f"{bn_num(no_rain_gross_mm, 2)} (মিমি) mm"
         )
 
         c.metric(
             "প্রয়োজনীয় পানি",
-            f"{bn_num(no_rain_water_liters, 0, True)} L"
+            f"{bn_num(no_rain_water_liters, 0, True)} (লিটার)L"
         )
 
         st.divider()
@@ -6171,12 +6182,12 @@ def show_agriculture_result():
 
         a.metric(
             "পানির গভীরতা",
-            f"{bn_num(data['existing_water'], 1)} mm"
+            f"{bn_num(data['existing_water'], 1)}(মিমি) mm"
         )
 
         b.metric(
             "মোট পানি",
-            f"{bn_num(data['existing_water_liters'], 0, True)} L"
+            f"{bn_num(data['existing_water_liters'], 0, True)} (লিটার)L"
         )
 
         c.metric(
@@ -6227,7 +6238,7 @@ def show_agriculture_result():
         )
 
         st.write(
-            f"বৃষ্টির পূর্বাভাস: {bn_num(data['predicted_rain'], 2)} mm"
+            f"বৃষ্টির পূর্বাভাস: {bn_num(data['predicted_rain'], 2)} (মিমি) mm"
         )
 
         st.write(
@@ -6252,7 +6263,7 @@ def show_agriculture_result():
 
             st.write(
                 f"প্রতি স্প্রিংকলারের flow: "
-                f"{bn_num(data['sprinkler_flow_lph'], 2)} L/hour"
+                f"{bn_num(data['sprinkler_flow_lph'], 2)}(লিটার/ঘণ্টা) L/hour"
             )
 
         st.caption(
