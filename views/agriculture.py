@@ -1978,7 +1978,8 @@ def auto_predict_agriculture_rainfall(
             weather_values, weather_error = (
                 load_weather_values(
                     station=station,
-                    target=target
+                    target=target,
+                    df=df
                 )
             )
 
