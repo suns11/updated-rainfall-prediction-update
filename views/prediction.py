@@ -1,8 +1,8 @@
 
-
-
+# ============================================================
+# ============================================================
 #          RAINFALL PREDICTION PAGE — DEVELOPER GUIDE
-
+# ============================================================
 #
 # PURPOSE OF THIS FILE
 # ------------------------------------------------------------
@@ -25,9 +25,9 @@
 # 13. Display rainfall probability speedometer
 #
 #
-
+# ============================================================
 #                    MASTER CODE INDEX
-
+# ============================================================
 #
 # [01] IMPORTS
 #      External libraries and internal project services.
@@ -153,9 +153,9 @@
 #      Change this section.
 #
 #
-
+# ============================================================
 #              IMPORTANT CHANGE-LOCATION GUIDE
-
+# ============================================================
 #
 # Change rainfall condition text
 # -> [02] WEATHER CONDITION
@@ -228,9 +228,9 @@
 # -> [19] FUTURE MESSAGE
 #
 #
-
+# ============================================================
 #                  IMPORTANT DEPENDENCIES
-
+# ============================================================
 #
 # This file depends on:
 #
@@ -254,9 +254,9 @@
 # where they are created and used.
 #
 #
-
+# ============================================================
 #                  PREDICTION FLOW
-
+# ============================================================
 #
 # User selects Station
 #        ↓
@@ -293,14 +293,14 @@
 #              Display result/gauge
 #
 #
-
+# ============================================================
 # IMPORTANT:
 # The comments below document the original code.
 # Application logic has intentionally been kept unchanged.
+# ============================================================
 
 
-
-
+# ============================================================
 # [01] IMPORTS
 # ------------------------------------------------------------
 # PURPOSE:
@@ -314,7 +314,7 @@
 # IMPORTANT:
 # Do not remove an import unless you verify that it is no longer
 # used anywhere in this file.
-
+# ============================================================
 
 import streamlit as st
 import pandas as pd
@@ -331,7 +331,7 @@ from services.weather_api import (
 )
 
 
-
+# ============================================================
 # [02] WEATHER CONDITION
 # ------------------------------------------------------------
 # FUNCTION:
@@ -355,7 +355,7 @@ from services.weather_api import (
 # IMPORTANT:
 # When prediction is available, predicted rainfall takes
 # priority over weather code.
-
+# ============================================================
 
 def condition(code, pred=None):
 
@@ -413,7 +413,7 @@ def condition(code, pred=None):
         )
 
 
-
+# ============================================================
 # [03] RAIN PROBABILITY
 # ------------------------------------------------------------
 # FUNCTION:
@@ -433,7 +433,7 @@ def condition(code, pred=None):
 #
 # DO NOT describe this as statistical model probability unless
 # the underlying methodology is changed and validated.
-
+# ============================================================
 
 def estimate_rain_probability(pred):
 
@@ -466,7 +466,7 @@ def estimate_rain_probability(pred):
     return probability
 
 
-
+# ============================================================
 # [04] SAFE NUMBER CONVERSION
 # ------------------------------------------------------------
 # FUNCTION:
@@ -485,7 +485,7 @@ def estimate_rain_probability(pred):
 #
 # CHANGE HERE IF:
 # - numeric fallback behavior needs to change.
-
+# ============================================================
 
 def safe_float(value, default=0.0):
 
@@ -502,7 +502,7 @@ def safe_float(value, default=0.0):
         return float(default)
 
 
-
+# ============================================================
 # [05] CORE ML FEATURE ENGINEERING
 # ------------------------------------------------------------
 # FUNCTION:
@@ -540,7 +540,7 @@ def safe_float(value, default=0.0):
 # CHANGE THIS FUNCTION ONLY CAREFULLY.
 #
 # Any change here can directly affect model predictions.
-
+# ============================================================
 
 def create_prediction_features(
     historical_df,
@@ -551,12 +551,12 @@ def create_prediction_features(
     train_medians
 ):
 
-    
+    # ========================================================
     # [05-A] COPY AND NORMALIZE DATA
     # --------------------------------------------------------
     # Makes a working copy and normalizes dates so that
     # comparisons are consistent.
-    
+    # ========================================================
 
     data = historical_df.copy()
 
@@ -584,7 +584,7 @@ def create_prediction_features(
         )
     ].copy()
 
-    
+    # ========================================================
     # [05-B] TARGET ROW
     # --------------------------------------------------------
     # Creates the row representing the date we want to predict.
@@ -599,7 +599,7 @@ def create_prediction_features(
     # IMPORTANT:
     # The feature names should remain compatible with the
     # training pipeline.
-    
+    # ========================================================
 
     target_row = {
 
@@ -707,7 +707,7 @@ def create_prediction_features(
         ["Station_ID", "Date"]
     ).reset_index(drop=True)
 
-    
+    # ========================================================
     # [05-C] CALENDAR FEATURES
     # --------------------------------------------------------
     # Creates date-based features used by the ML model.
@@ -725,7 +725,7 @@ def create_prediction_features(
     #
     # IMPORTANT:
     # The training pipeline must use the same feature logic.
-    
+    # ========================================================
 
     data["year"] = data["Date"].dt.year
 
@@ -748,7 +748,7 @@ def create_prediction_features(
         .astype(int)
     )
 
-    
+    # ========================================================
     # [05-D] CYCLIC FEATURES
     # --------------------------------------------------------
     # Converts periodic calendar values into sine/cosine
@@ -760,7 +760,7 @@ def create_prediction_features(
     #
     # CHANGE HERE IF:
     # - seasonal encoding needs modification.
-    
+    # ========================================================
 
     data["month_sin"] = (
         np.sin(
@@ -806,7 +806,7 @@ def create_prediction_features(
         )
     )
 
-    
+    # ========================================================
     # [05-E] RAINFALL LAG FEATURES
     # --------------------------------------------------------
     # Uses previous rainfall observations from the same station.
@@ -823,7 +823,7 @@ def create_prediction_features(
     #
     # IMPORTANT:
     # Training and prediction feature definitions must match.
-    
+    # ========================================================
 
     RAIN_LAGS = [
         1,
@@ -846,7 +846,7 @@ def create_prediction_features(
             .shift(lag)
         )
 
-    
+    # ========================================================
     # [05-F] RAIN OCCURRENCE FEATURES
     # --------------------------------------------------------
     # Converts rainfall into a binary indicator:
@@ -861,7 +861,7 @@ def create_prediction_features(
     #
     # CHANGE HERE IF:
     # rainfall occurrence definition needs to change.
-    
+    # ========================================================
 
     rain_occurrence = (
         data["rain_sum"] > 0
@@ -877,7 +877,7 @@ def create_prediction_features(
             .shift(lag)
         )
 
-    
+    # ========================================================
     # [05-G] ROLLING RAINFALL FEATURES
     # --------------------------------------------------------
     # Creates historical rainfall summaries.
@@ -902,7 +902,7 @@ def create_prediction_features(
     # CHANGE HERE IF:
     # - rolling windows need to change
     # - additional rolling statistics are needed.
-    
+    # ========================================================
 
     shifted_rain = (
         data
@@ -954,7 +954,7 @@ def create_prediction_features(
             )
         )
 
-    
+    # ========================================================
     # [05-H] WEATHER LAG FEATURES
     # --------------------------------------------------------
     # Creates lagged versions of historical weather variables.
@@ -980,7 +980,7 @@ def create_prediction_features(
     #
     # IMPORTANT:
     # Keep this synchronized with model training features.
-    
+    # ========================================================
 
     same_day_weather = [
 
@@ -1022,7 +1022,7 @@ def create_prediction_features(
                 .shift(lag)
             )
 
-    
+    # ========================================================
     # [05-I] STATION DUMMY VARIABLES
     # --------------------------------------------------------
     # Converts Station_ID into one-hot encoded station columns.
@@ -1037,7 +1037,7 @@ def create_prediction_features(
     #
     # IMPORTANT:
     # Model training must use compatible station encoding.
-    
+    # ========================================================
 
     station_dummies = pd.get_dummies(
         data["Station_ID"],
@@ -1053,13 +1053,13 @@ def create_prediction_features(
         axis=1
     )
 
-    
+    # ========================================================
     # [05-J] GET TARGET ROW
     # --------------------------------------------------------
     # Extracts the exact station/date row that needs prediction.
     #
     # There must be exactly ONE matching row.
-    
+    # ========================================================
 
     prediction_row = data[
         (data["Station_ID"] == station_id)
@@ -1073,7 +1073,7 @@ def create_prediction_features(
             "Could not create prediction row."
         )
 
-    
+    # ========================================================
     # [05-K] SELECT MODEL FEATURES
     # --------------------------------------------------------
     # Selects ONLY the columns expected by the trained model.
@@ -1085,20 +1085,20 @@ def create_prediction_features(
     # actual model input.
     #
     # CHANGE CAREFULLY.
-    
+    # ========================================================
 
     X_prediction = (
         prediction_row
         .reindex(columns=feature_columns)
     )
 
-    
+    # ========================================================
     # [05-L] NUMERIC CONVERSION
     # --------------------------------------------------------
     # Ensures all model input values are numeric.
     #
     # Invalid values become NaN and are handled later.
-    
+    # ========================================================
 
     for col in X_prediction.columns:
 
@@ -1112,7 +1112,7 @@ def create_prediction_features(
         np.nan
     )
 
-    
+    # ========================================================
     # [05-M] STATION HISTORY
     # --------------------------------------------------------
     # Gets only historical rows from the selected station and
@@ -1122,7 +1122,7 @@ def create_prediction_features(
     #
     # This gives the prediction pipeline a station-specific
     # missing-value fallback before using training medians.
-    
+    # ========================================================
 
     station_history = data[
         (data["Station_ID"] == station_id)
@@ -1147,7 +1147,7 @@ def create_prediction_features(
         .median(numeric_only=True)
     )
 
-    
+    # ========================================================
     # [05-N] FILL MISSING VALUES
     # --------------------------------------------------------
     # Missing values are filled in THREE stages:
@@ -1161,7 +1161,7 @@ def create_prediction_features(
     #
     # IMPORTANT:
     # Changing preprocessing can affect prediction behavior.
-    
+    # ========================================================
 
     X_prediction = (
         X_prediction
@@ -1178,7 +1178,7 @@ def create_prediction_features(
         .fillna(0)
     )
 
-    
+    # ========================================================
     # [05-O] FINAL FEATURE COLUMN ORDER
     # --------------------------------------------------------
     # Reorders the final dataframe to exactly match the model's
@@ -1186,7 +1186,7 @@ def create_prediction_features(
     #
     # This is important because ML models expect the same
     # feature arrangement used during training.
-    
+    # ========================================================
 
     X_prediction = (
         X_prediction
@@ -1199,7 +1199,7 @@ def create_prediction_features(
     return X_prediction
 
 
-
+# ============================================================
 # [06] WEATHER DATA LOADING
 # ------------------------------------------------------------
 # FUNCTION:
@@ -1221,36 +1221,51 @@ def create_prediction_features(
 # CHANGE HERE IF:
 # - weather API source changes
 # - API response processing changes
-
-
-def load_weather_values(
-    station,
-    target
-):
-
+# ============================================================
+def load_weather_values(station, target, df):
     try:
+        target_date = pd.Timestamp(target).normalize()
+        station_id = str(station["Station_ID"]).strip()
 
-        weather = fetch_target_weather(
-            station=station,
-            target_date=target
+        dates = pd.to_datetime(
+            df["Date"], errors="coerce"
+        ).dt.normalize()
+
+        station_ids = (
+            df["Station_ID"].astype(str).str.strip()
         )
 
-        weather["Latitude"] = float(
-            station["Latitude"]
-        )
+        matched = df.loc[
+            (station_ids == station_id)
+            & (dates == target_date)
+        ]
 
-        weather["Longitude"] = float(
-            station["Longitude"]
-        )
+        if len(matched) > 1:
+            raise ValueError(
+                f"Duplicate CSV records: "
+                f"{station_id}, {target_date.date()}"
+            )
+
+        if len(matched) == 1:
+            weather = matched.iloc[0].to_dict()
+            weather["_data_source"] = "Historical CSV"
+
+        else:
+            weather = fetch_target_weather(
+                station=station,
+                target_date=target_date
+            )
+
+            weather["_data_source"] = "Weather API"
+            weather["Latitude"] = float(station["Latitude"])
+            weather["Longitude"] = float(station["Longitude"])
 
         return weather, None
 
     except Exception as e:
-
         return None, str(e)
 
-
-
+# ============================================================
 # [07] MAIN PREDICTION PAGE
 # ------------------------------------------------------------
 # FUNCTION:
@@ -1278,7 +1293,7 @@ def load_weather_values(
 #
 # IMPORTANT:
 # Most user interaction and prediction flow happens here.
-
+# ============================================================
 
 def show_prediction(
     df,
@@ -1288,7 +1303,7 @@ def show_prediction(
     history_days
 ):
 
-    
+    # ========================================================
     # [07-A] PAGE TITLE
     # --------------------------------------------------------
     # User-visible title and explanation.
@@ -1297,7 +1312,7 @@ def show_prediction(
     # - page title
     # - introductory description
     # needs to change.
-    
+    # ========================================================
 
     st.title(
         "🔮 Rainfall Prediction"
@@ -1310,7 +1325,7 @@ def show_prediction(
         "is used for lag and rolling features."
     )
 
-    
+    # ========================================================
     # [07-B] STATION DATA PREPARATION
     # --------------------------------------------------------
     # Gets station metadata and creates a human-readable label.
@@ -1319,7 +1334,7 @@ def show_prediction(
     #
     # CHANGE HERE IF:
     # - station label format needs to change.
-    
+    # ========================================================
 
     meta = get_station_table(df).copy()
 
@@ -1335,7 +1350,7 @@ def show_prediction(
         meta["label"].tolist()
     )
 
-    
+    # ========================================================
     # [08] STATION SELECTION
     # --------------------------------------------------------
     # User selects the weather station.
@@ -1345,7 +1360,7 @@ def show_prediction(
     # CHANGE HERE IF:
     # - station selection UI changes
     # - station display format changes.
-    
+    # ========================================================
 
     selected_label = st.selectbox(
         "📍 Select Station",
@@ -1357,7 +1372,7 @@ def show_prediction(
         meta["label"] == selected_label
     ].iloc[0]
 
-    
+    # ========================================================
     # [09] DATE SELECTION
     # --------------------------------------------------------
     # Controls the target prediction date.
@@ -1371,11 +1386,11 @@ def show_prediction(
     # CHANGE HERE IF:
     # - calendar behavior changes
     # - date restrictions are needed.
-    
+    # ========================================================
 
     today = date.today()
 
-    
+    # ========================================================
     # [09-A] STREAMLIT CALENDAR STATE
     # --------------------------------------------------------
     # Keeps the selected calendar date synchronized with
@@ -1383,7 +1398,7 @@ def show_prediction(
     #
     # This prevents date-change issues during Streamlit
     # reruns.
-    
+    # ========================================================
 
     if "prediction_date" not in st.session_state:
         st.session_state.prediction_date = today
@@ -1405,7 +1420,7 @@ def show_prediction(
         selected_date
     ).normalize()
 
-    
+    # ========================================================
     # [10] PAST / TODAY / FUTURE MODE
     # --------------------------------------------------------
     # Determines how the selected date should be treated.
@@ -1422,7 +1437,7 @@ def show_prediction(
     # CHANGE HERE IF:
     # - mode behavior changes
     # - user-facing mode messages change.
-    
+    # ========================================================
 
     is_future = selected_date > today
 
@@ -1455,7 +1470,7 @@ def show_prediction(
             "for the selected date."
         )
 
-    
+    # ========================================================
     # [11] SESSION KEY
     # --------------------------------------------------------
     # Creates a unique identifier using:
@@ -1470,7 +1485,7 @@ def show_prediction(
     # IMPORTANT:
     # This prevents displaying an old prediction for a new
     # station or date.
-    
+    # ========================================================
 
     weather_key = (
         f"{station['Station_ID']}_"
@@ -1493,12 +1508,12 @@ def show_prediction(
         if "rain_prediction" in st.session_state:
             del st.session_state.rain_prediction
 
-    
+    # ========================================================
     # [11-A] CLEAR OLD PREDICTION RESULT
     # --------------------------------------------------------
     # Additional protection against showing an old prediction
     # after station/date changes.
-    
+    # ========================================================
 
     if "last_prediction_key" in st.session_state:
 
@@ -1513,13 +1528,13 @@ def show_prediction(
                     "rain_prediction"
                 ]
 
-    
+    # ========================================================
     # [12] WEATHER LOAD BUTTON
     # --------------------------------------------------------
     # Provides a manual button for reloading target weather.
     #
     # The actual loading logic is below in AUTO FETCH.
-    
+    # ========================================================
 
     col1, col2 = st.columns([1, 3])
 
@@ -1531,7 +1546,7 @@ def show_prediction(
             key="refresh_prediction_weather"
         )
 
-    
+    # ========================================================
     # [12-A] AUTO WEATHER FETCH
     # --------------------------------------------------------
     # Weather is loaded automatically when:
@@ -1550,7 +1565,7 @@ def show_prediction(
     # CHANGE HERE IF:
     # - API loading behavior changes
     # - automatic refresh behavior changes.
-    
+    # ========================================================
 
     if (
         refresh_weather
@@ -1568,21 +1583,23 @@ def show_prediction(
             weather_data, error = (
                 load_weather_values(
                     station=station,
-                    target=target
+                    target=target,
+                    df=df
                 )
             )
 
             if error:
-
-                st.warning(
-                    "⚠️ Real weather data could not be loaded. "
-                    "CSV median values are being used."
-                )
-
                 st.session_state.weather_values = None
-
                 st.session_state.weather_error = error
 
+                st.session_state.pop(
+                    "weather_data_key", None
+                )
+
+                st.error(
+                    f"Weather data loading failed: {error}"
+                )
+                st.stop()
             else:
 
                 st.session_state.weather_values = (
@@ -1595,7 +1612,7 @@ def show_prediction(
                 weather_key
             )
 
-    
+    # ========================================================
     # [12-B] BASE CSV MEDIAN
     # --------------------------------------------------------
     # Calculates median numeric values for the selected station
@@ -1606,7 +1623,7 @@ def show_prediction(
     #
     # CHANGE HERE IF:
     # - fallback strategy changes.
-    
+    # ========================================================
 
     station_df = df[
         df["Station_ID"] == station["Station_ID"]
@@ -1618,7 +1635,7 @@ def show_prediction(
         .to_dict()
     )
 
-    
+    # ========================================================
     # [12-C] SELECT WEATHER SOURCE
     # --------------------------------------------------------
     # Priority:
@@ -1628,7 +1645,7 @@ def show_prediction(
     #
     # This section decides which source is sent to the
     # weather input form.
-    
+    # ========================================================
 
     api_values = st.session_state.get(
         "weather_values",
@@ -1669,7 +1686,7 @@ def show_prediction(
                 f"{target.strftime('%Y-%m-%d')}"
             )
 
-    
+    # ========================================================
     # [13] WEATHER INPUT FORM
     # --------------------------------------------------------
     # User-visible weather input section.
@@ -1690,7 +1707,7 @@ def show_prediction(
     # IMPORTANT:
     # Simply adding a UI field does NOT automatically make the
     # ML model use that field.
-    
+    # ========================================================
 
     with st.form(
         "prediction_weather_form"
@@ -1705,9 +1722,9 @@ def show_prediction(
             "You can edit any value if needed."
         )
 
-        
+        # ====================================================
         # [13-A] WEATHER INPUT ROW 1
-        
+        # ====================================================
 
         c1, c2, c3, c4 = st.columns(4)
 
@@ -1751,9 +1768,9 @@ def show_prediction(
             )
         )
 
-        
+        # ====================================================
         # [13-B] WEATHER INPUT ROW 2
-        
+        # ====================================================
 
         c1, c2, c3, c4 = st.columns(4)
 
@@ -1793,9 +1810,9 @@ def show_prediction(
             )
         )
 
-        
+        # ====================================================
         # [13-C] WEATHER INPUT ROW 3
-        
+        # ====================================================
 
         c1, c2, c3, c4 = st.columns(4)
 
@@ -1838,12 +1855,12 @@ def show_prediction(
             )
         )
 
-        
+        # ====================================================
         # [13-D] PREDICTION SUBMIT BUTTON
         # ----------------------------------------------------
         # The form only sends the user's values into the
         # prediction pipeline when this button is clicked.
-        
+        # ====================================================
 
         submitted = st.form_submit_button(
             "🌧️ Predict Rainfall",
@@ -1851,7 +1868,7 @@ def show_prediction(
             width="stretch"
         )
 
-    
+    # ========================================================
     # [14] PREDICTION EXECUTION
     # --------------------------------------------------------
     # Everything inside this block runs after the user clicks
@@ -1876,13 +1893,13 @@ def show_prediction(
     # Probability
     #      ↓
     # Session state
-    
+    # ========================================================
 
     if submitted:
 
         try:
 
-            
+            # =================================================
             # [14-A] COLLECT FINAL WEATHER VALUES
             # -------------------------------------------------
             # Converts the form values into the dictionary
@@ -1891,7 +1908,7 @@ def show_prediction(
             # CHANGE HERE IF:
             # - weather input names change
             # - a new model input is added.
-            
+            # =================================================
 
             values = {
 
@@ -1942,7 +1959,7 @@ def show_prediction(
                 et0
             }
 
-            
+            # =================================================
             # [14-B] HISTORICAL RAINFALL PREPARATION
             # -------------------------------------------------
             # Builds the historical rainfall dataset required
@@ -1955,7 +1972,7 @@ def show_prediction(
             # - history length
             # - historical data preparation
             # needs to change.
-            
+            # =================================================
 
             with st.spinner(
                 "Preparing historical rainfall data..."
@@ -1970,7 +1987,7 @@ def show_prediction(
                     )
                 )
 
-            
+            # =================================================
             # [14-C] FUTURE-DATE VALIDATION
             # -------------------------------------------------
             # For future prediction, verifies that previous
@@ -1981,7 +1998,7 @@ def show_prediction(
             #
             # CHANGE HERE IF:
             # - future-date validation rules change.
-            
+            # =================================================
 
             if is_future:
 
@@ -2025,7 +2042,7 @@ def show_prediction(
                         "is missing."
                     )
 
-            
+            # =================================================
             # [15] FEATURE CREATION
             # -------------------------------------------------
             # Converts historical data + target weather into
@@ -2036,7 +2053,7 @@ def show_prediction(
             #
             # This is the main bridge between raw weather/history
             # and the CatBoost model.
-            
+            # =================================================
 
             with st.spinner(
                 "Creating rolling and lag features..."
@@ -2051,7 +2068,7 @@ def show_prediction(
                     train_medians=train_medians
                 )
 
-            
+            # =================================================
             # [16] MODEL INPUT VALIDATION
             # -------------------------------------------------
             # Performs safety checks before sending X to model.
@@ -2063,7 +2080,7 @@ def show_prediction(
             #
             # CHANGE HERE IF:
             # - additional model-input validation is needed.
-            
+            # =================================================
 
             if X.empty:
 
@@ -2089,7 +2106,7 @@ def show_prediction(
                     f"{nan_count} NaN values."
                 )
 
-            
+            # =================================================
             # [17] CATBOOST MODEL PREDICTION
             # -------------------------------------------------
             # Sends the final feature matrix to the trained model.
@@ -2103,7 +2120,7 @@ def show_prediction(
             # CHANGE MODEL:
             # The model loading/injection code is outside this
             # function. This section only performs prediction.
-            
+            # =================================================
 
             with st.spinner(
                 "CatBoost model is predicting..."
@@ -2125,19 +2142,19 @@ def show_prediction(
                 0.0
             )
 
-            
+            # =================================================
             # [17-A] WEATHER CONDITION
             # -------------------------------------------------
             # Converts prediction into a readable weather
             # condition/message.
-            
+            # =================================================
 
             weather_name, message = condition(
                 code=int(weather_code),
                 pred=pred
             )
 
-            
+            # =================================================
             # [17-B] ESTIMATED RAINFALL PROBABILITY
             # -------------------------------------------------
             # Converts predicted rainfall amount into the UI
@@ -2146,13 +2163,13 @@ def show_prediction(
             # IMPORTANT:
             # This is an estimated UI score, not a calibrated
             # regression probability.
-            
+            # =================================================
 
             rain_probability = (
                 estimate_rain_probability(pred)
             )
 
-            
+            # =================================================
             # [18] SAVE PREDICTION RESULT
             # -------------------------------------------------
             # Stores all prediction-related information in
@@ -2165,7 +2182,7 @@ def show_prediction(
             #
             # CHANGE HERE IF:
             # - additional result information needs to be stored.
-            
+            # =================================================
 
             st.session_state.rain_prediction = {
 
@@ -2208,7 +2225,7 @@ def show_prediction(
 
         except Exception as e:
 
-            
+            # =================================================
             # [18-A] PREDICTION ERROR HANDLING
             # -------------------------------------------------
             # Any unexpected error during prediction is shown
@@ -2216,7 +2233,7 @@ def show_prediction(
             #
             # CHANGE HERE IF:
             # - production error display needs to be customized.
-            
+            # =================================================
 
             st.error(
                 "❌ Prediction Failed"
@@ -2224,7 +2241,7 @@ def show_prediction(
 
             st.exception(e)
 
-    
+    # ========================================================
     # [19] RESULT DISPLAY
     # --------------------------------------------------------
     # This section displays the previously stored prediction.
@@ -2237,7 +2254,7 @@ def show_prediction(
     #
     # This prevents stale results from appearing for a different
     # station/date.
-    
+    # ========================================================
 
     if "rain_prediction" in st.session_state:
 
@@ -2263,7 +2280,7 @@ def show_prediction(
 
             st.divider()
 
-            
+            # =================================================
             # [19-A] RAIN PROBABILITY SECTION
             # -------------------------------------------------
             # Displays rainfall probability before the main
@@ -2271,7 +2288,7 @@ def show_prediction(
             #
             # CHANGE HERE IF:
             # - probability section placement changes.
-            
+            # =================================================
 
             probability = float(
                 result.get(
@@ -2286,7 +2303,7 @@ def show_prediction(
                 "### 🌧️ Rainfall Probability"
             )
 
-            
+            # =================================================
             # [20] RAIN PROBABILITY SPEEDOMETER
             # -------------------------------------------------
             # Creates the Plotly semicircular rainfall
@@ -2308,13 +2325,13 @@ def show_prediction(
             #
             # This section does NOT calculate the model prediction.
             # It only visualizes the already-calculated probability.
-            
+            # =================================================
 
             theta = np.linspace(0, 180, 120)
 
-            
+            # =================================================
             # [20-A] GAUGE MATHEMATICS / FIGURE
-            
+            # =================================================
 
             import math
 
@@ -2327,7 +2344,7 @@ def show_prediction(
             outer_r = 1.0
             inner_r = 0.78
 
-            
+            # =================================================
             # [20-B] GAUGE COLOR SEGMENTS
             # -------------------------------------------------
             # Current ranges:
@@ -2339,7 +2356,7 @@ def show_prediction(
             #
             # CHANGE HERE IF:
             # - gauge color ranges need to change.
-            
+            # =================================================
 
             segments = [
                 (0, 25, "#22C55E"),
@@ -2379,9 +2396,9 @@ def show_prediction(
                     )
                 )
 
-            
+            # =================================================
             # [20-C] GAUGE INNER FACE
-            
+            # =================================================
 
             face_angles = np.linspace(math.pi, 0, 200)
 
@@ -2398,7 +2415,7 @@ def show_prediction(
                 )
             )
 
-            
+            # =================================================
             # [20-D] GAUGE NEEDLE
             # -------------------------------------------------
             # Needle position is calculated from the already
@@ -2407,7 +2424,7 @@ def show_prediction(
             # IMPORTANT:
             # Changing this does NOT change probability itself.
             # It only changes how the probability is displayed.
-            
+            # =================================================
 
             needle_angle = math.pi - math.pi * probability / 100
 
@@ -2431,9 +2448,9 @@ def show_prediction(
                 )
             )
 
-            
+            # =================================================
             # [20-E] GAUGE CENTER KNOB
-            
+            # =================================================
 
             fig.add_trace(
                 go.Scatter(
@@ -2453,9 +2470,9 @@ def show_prediction(
                 )
             )
 
-            
+            # =================================================
             # [20-F] GAUGE TEXT
-            
+            # =================================================
 
             fig.add_annotation(
                 x=0,
@@ -2479,7 +2496,7 @@ def show_prediction(
                 )
             )
 
-            
+            # =================================================
             # [20-G] GAUGE LAYOUT
             # -------------------------------------------------
             # Controls size, margins, axes and interaction.
@@ -2490,7 +2507,7 @@ def show_prediction(
             # - responsiveness
             # - interaction settings
             # need to change.
-            
+            # =================================================
 
             fig.update_layout(
                 height=330,
@@ -2531,17 +2548,17 @@ def show_prediction(
                 }
             )
 
-            
+            # =================================================
             # [20-H] PROBABILITY DISCLAIMER
             # -------------------------------------------------
             # Explains what the displayed probability represents.
-            
+            # =================================================
 
             st.caption(
                 "Probability is estimated from the predicted rainfall amount."
             )
 
-            
+            # =================================================
             # [19-B] PREDICTION RESULT TITLE
             # -------------------------------------------------
             # Future predictions receive a different heading.
@@ -2549,7 +2566,7 @@ def show_prediction(
             #
             # CHANGE HERE IF:
             # - result title text changes.
-            
+            # =================================================
 
             if result.get(
                 "is_future",
@@ -2566,7 +2583,7 @@ def show_prediction(
                     "🌧️ Prediction Result"
                 )
 
-            
+            # =================================================
             # [19-C] MAIN RESULT METRICS
             # -------------------------------------------------
             # Displays the three main prediction outputs:
@@ -2580,7 +2597,7 @@ def show_prediction(
             # - metric labels
             # - displayed values
             # need to change.
-            
+            # =================================================
 
             a, b, c = st.columns(3)
 
@@ -2599,7 +2616,7 @@ def show_prediction(
                 f"{result['et0']:.2f}"
             )
 
-            
+            # =================================================
             # [19-D] PROBABILITY MESSAGE
             # -------------------------------------------------
             # Converts the estimated probability into a
@@ -2615,7 +2632,7 @@ def show_prediction(
             # CHANGE HERE IF:
             # - probability message thresholds change
             # - wording changes.
-            
+            # =================================================
 
             if probability < 20:
 
@@ -2641,31 +2658,31 @@ def show_prediction(
                     "⛈️ Very high rainfall likelihood."
                 )
 
-            
+            # =================================================
             # [19-E] GENERAL WEATHER MESSAGE
             # -------------------------------------------------
             # Displays the message generated by condition().
             #
             # If rainfall amount was used for condition(),
             # this message corresponds to the prediction category.
-            
+            # =================================================
 
             st.info(
                 result["message"]
             )
 
-            
+            # =================================================
             # [19-F] HISTORY NOTE
             # -------------------------------------------------
             # Shows information returned from
             # build_on_demand_history().
-            
+            # =================================================
 
             st.caption(
                 result["history_note"]
             )
 
-            
+            # =================================================
             # [19-G] FUTURE PREDICTION MESSAGE
             # -------------------------------------------------
             # Shows an additional explanation for future
@@ -2673,7 +2690,7 @@ def show_prediction(
             #
             # CHANGE HERE IF:
             # - future prediction explanation changes.
-            
+            # =================================================
 
             if result.get(
                 "is_future",
@@ -2695,9 +2712,9 @@ def show_prediction(
                 )
 
 
-
+# ============================================================
 #                  END OF FILE
-
+# ============================================================
 #
 # QUICK DEVELOPER REFERENCE
 # ------------------------------------------------------------
@@ -2778,7 +2795,7 @@ def show_prediction(
 #
 # Probability gauge
 #       -> [20]
-#
+#s
 # Gauge colors
 #       -> [20-B]
 #
@@ -2788,3 +2805,4 @@ def show_prediction(
 # Gauge size/layout
 #       -> [20-G]
 #
+# ============================================================
